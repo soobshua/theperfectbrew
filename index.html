@@ -804,7 +804,7 @@
                     </div>
                     <div class="button-group">
                         <button class="btn btn-secondary" onclick="goToStep(3)">Back</button>
-                        <button class="btn" onclick="saveBrewCard()">Save Brew Card</button>
+                        <button class="btn" onclick="verifyAndSaveBrewCard()">Save Brew Card</button>
                     </div>
                 </div>
 
@@ -893,6 +893,31 @@
         </div>
     </div>
 
+    <!-- MODAL: Delete Bean Confirmation -->
+    <div class="modal-backdrop" id="modal-confirm-delete-bean">
+        <div class="modal-content" style="max-width: 380px; text-align: center;">
+            <h2 style="font-size: 1.1rem; margin-bottom: 0.5rem;">Delete Bean</h2>
+            <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 1rem;" id="delete-bean-msg">Are you sure you want to delete this bean and all its associated brews?</p>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+                <button class="btn btn-secondary" onclick="closeModals()">Cancel</button>
+                <button class="btn btn-danger" onclick="executeDeleteBean()">Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: Duplicate Entry Warning -->
+    <div class="modal-backdrop" id="modal-duplicate-warning">
+        <div class="modal-content" style="max-width: 400px; text-align: center;">
+            <h2 style="font-size: 1.1rem; margin-bottom: 0.5rem;">Existing Entry Found</h2>
+            <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 1.25rem;">You already logged a brew for this bean today. Would you like to replace your previous entry or make a duplicate entry?</p>
+            <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                <button class="btn" onclick="resolveDuplicate('replace')">Replace Previous Entry</button>
+                <button class="btn btn-secondary" onclick="resolveDuplicate('duplicate')">Make Duplicate Entry</button>
+                <button class="btn btn-danger" style="background:transparent; border:1px solid var(--border-color); color:var(--text-muted);" onclick="closeModals()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         let db = JSON.parse(localStorage.getItem('brewlog_db')) || {
             beans: [],
@@ -917,8 +942,10 @@
         let selectedCalendarDateStr = null;
         let brewIdPendingDelete = null;
         let beanNameToEdit = null;
+        let beanNameToDelete = null;
         let showArchivedBeans = false;
         let rankedBeansCache = [];
+        let pendingBrewData = null;
         const circumference = 264; // 2 * PI * 42
 
         function switchTab(tabId) {
@@ -1021,14 +1048,14 @@
             }
             if (stepNum === 3) {
                 document.getElementById('step-timer').classList.remove('step-hidden');
-                startStopwatchSession();
+                initStopwatchSession();
             }
             if (stepNum === 4) {
                 document.getElementById('step-complete').classList.remove('step-hidden');
             }
         }
 
-        function startStopwatchSession() {
+        function initStopwatchSession() {
             const beanVal = document.getElementById('bean-select').value;
             if (beanVal === 'new') {
                 activeBrew.beanName = document.getElementById('bean-name').value.trim();
@@ -1050,6 +1077,7 @@
             stopwatchSeconds = 0;
             phaseCount = 1;
             isStopwatchRunning = false;
+            if (stopwatchInterval) clearInterval(stopwatchInterval);
 
             // Clear old SVG lap ticks
             const svg = document.getElementById('stopwatch-svg');
@@ -1063,10 +1091,9 @@
             const secs = stopwatchSeconds % 60;
             document.getElementById('timer-clock').textContent = `${mins}:${secs < 10 ? '0' : ''}${secs}`;
             document.getElementById('timer-phase-counter').textContent = `Phase / Pour ${phaseCount}`;
-            document.getElementById('timer-action-label').textContent = isStopwatchRunning ? 'Tap to Mark Lap' : 'Start';
+            document.getElementById('timer-action-label').textContent = isStopwatchRunning ? 'Tap Lap' : 'Start';
             document.getElementById('timer-status-instruction').textContent = isStopwatchRunning ? 'Tap center to record lap/pour tick' : 'Tap to Start Stopwatch';
 
-            // Continuous progress bar loop every 60 seconds
             const progressRatio = (stopwatchSeconds % 60) / 60;
             const strokeLen = circumference * progressRatio;
             const progressCircle = document.getElementById('stopwatch-progress');
@@ -1077,13 +1104,13 @@
         function handleTimerButtonPress() {
             if (!isStopwatchRunning) {
                 isStopwatchRunning = true;
+                if (stopwatchInterval) clearInterval(stopwatchInterval);
                 stopwatchInterval = setInterval(() => {
                     stopwatchSeconds++;
                     updateStopwatchUI();
                 }, 1000);
                 updateStopwatchUI();
             } else {
-                // Mark lap tick on the circle
                 addLapTickMarker();
                 phaseCount++;
                 updateStopwatchUI();
@@ -1092,10 +1119,9 @@
 
         function addLapTickMarker() {
             const progressRatio = (stopwatchSeconds % 60) / 60;
-            const angle = progressRatio * 360 - 90; // offset for SVG rotation
+            const angle = progressRatio * 360 - 90;
             const rad = angle * (Math.PI / 180);
 
-            // Center is (50, 50), radius r=42
             const cx = 50;
             const cy = 50;
             const rOuter = 42;
@@ -1124,13 +1150,14 @@
             goToStep(4);
         }
 
-        function saveBrewCard() {
+        function verifyAndSaveBrewCard() {
             const rank = parseFloat(document.getElementById('complete-rank').value) || 8;
             const notes = document.getElementById('complete-notes').value.trim();
+            const todayStr = new Date().toISOString().split('T')[0];
 
-            const newBrew = {
+            pendingBrewData = {
                 id: Date.now(),
-                date: new Date().toISOString().split('T')[0],
+                date: todayStr,
                 beanName: activeBrew.beanName,
                 roast: activeBrew.roast,
                 flavor: activeBrew.flavor,
@@ -1143,22 +1170,48 @@
                 notes: notes
             };
 
-            let existingBean = db.beans.find(b => b.name.toLowerCase() === activeBrew.beanName.toLowerCase());
+            // Check if already logged today for this bean
+            const existingToday = db.brews.find(b => b.beanName.toLowerCase() === activeBrew.beanName.toLowerCase() && b.date === todayStr);
+            if (existingToday) {
+                document.getElementById('modal-duplicate-warning').classList.add('active');
+                return;
+            }
+
+            commitBrew(pendingBrewData, 'add');
+        }
+
+        function resolveDuplicate(action) {
+            closeModals();
+            if (action === 'replace') {
+                commitBrew(pendingBrewData, 'replace');
+            } else if (action === 'duplicate') {
+                commitBrew(pendingBrewData, 'add');
+            }
+        }
+
+        function commitBrew(newBrew, mode) {
+            const todayStr = newBrew.date;
+            if (mode === 'replace') {
+                db.brews = db.brews.filter(b => !(b.beanName.toLowerCase() === newBrew.beanName.toLowerCase() && b.date === todayStr));
+            }
+
+            let existingBean = db.beans.find(b => b.name.toLowerCase() === newBrew.beanName.toLowerCase());
             if (!existingBean) {
                 db.beans.push({
-                    name: activeBrew.beanName,
-                    roast: activeBrew.roast,
-                    flavor: activeBrew.flavor,
+                    name: newBrew.beanName,
+                    roast: newBrew.roast,
+                    flavor: newBrew.flavor,
                     archived: false
                 });
             } else if (existingBean.archived) {
-                existingBean.archived = false; // unarchive if brewed again
+                existingBean.archived = false;
             }
 
             db.brews.unshift(newBrew);
             localStorage.setItem('brewlog_db', JSON.stringify(db));
 
             document.getElementById('complete-notes').value = '';
+            pendingBrewData = null;
             switchTab('dashboard');
         }
 
@@ -1192,6 +1245,26 @@
             renderAnalytics();
         }
 
+        function promptDeleteBean(beanName) {
+            beanNameToDelete = beanName;
+            document.getElementById('delete-bean-msg').textContent = `Are you sure you want to delete "${beanName}"? This will remove the bean and all its associated brew logs across all views.`;
+            document.getElementById('modal-confirm-delete-bean').classList.add('active');
+        }
+
+        function executeDeleteBean() {
+            if (!beanNameToDelete) return;
+
+            // Remove bean from db.beans
+            db.beans = db.beans.filter(b => b.name !== beanNameToDelete);
+            // Remove associated brews from db.brews
+            db.brews = db.brews.filter(b => b.beanName !== beanNameToDelete);
+
+            localStorage.setItem('brewlog_db', JSON.stringify(db));
+            closeModals();
+            beanNameToDelete = null;
+            renderAnalytics();
+        }
+
         function toggleArchiveBean(beanName) {
             const beanObj = db.beans.find(b => b.name === beanName);
             if (beanObj) {
@@ -1205,8 +1278,8 @@
             const container = document.getElementById('bean-stats-container');
             const targetBeans = db.beans.filter(b => showArchivedBeans ? b.archived : !b.archived);
 
-            if (db.brews.length === 0 || targetBeans.length === 0) {
-                container.innerHTML = `<p style="color: var(--text-muted); font-size: 0.9rem;">${showArchivedBeans ? 'No archived beans found.' : 'No active beans recorded yet.'}</p>`;
+            if (db.brews.length === 0 && db.beans.length === 0) {
+                container.innerHTML = `<p style="color: var(--text-muted); font-size: 0.9rem;">No data recorded yet.</p>`;
                 rankedBeansCache = [];
                 return;
             }
@@ -1223,6 +1296,11 @@
             });
 
             rankedBeansCache.sort((a, b) => b.avgRank - a.avgRank);
+
+            if (rankedBeansCache.length === 0) {
+                container.innerHTML = `<p style="color: var(--text-muted); font-size: 0.9rem;">${showArchivedBeans ? 'No archived beans found.' : 'No active beans recorded yet.'}</p>`;
+                return;
+            }
 
             let html = '';
             rankedBeansCache.forEach((item, index) => {
@@ -1243,6 +1321,7 @@
                         <div class="bean-actions-row">
                             <button class="btn btn-small btn-secondary" onclick="promptEditBean('${beanName.replace(/'/g, "\\'")}')">Edit Name</button>
                             <button class="btn btn-small btn-secondary" onclick="toggleArchiveBean('${beanName.replace(/'/g, "\\'")}')">${isArchived ? 'Unarchive' : 'Archive'}</button>
+                            <button class="btn btn-small btn-danger" onclick="promptDeleteBean('${beanName.replace(/'/g, "\\'")}')">Delete</button>
                         </div>
                     </div>
                 `;
@@ -1352,7 +1431,6 @@
             if (db.brews.length === 0) {
                 body.innerHTML = `<p>Log some coffee cups to generate your taster profile.</p>`;
             } else {
-                // Extract unique bean names/regions and count roasts & flavors
                 const roastCounts = {};
                 const flavorCounts = {};
                 const regionCounts = {};
@@ -1367,7 +1445,6 @@
                         });
                     }
 
-                    // Guess region/origin from bean name
                     const nameLower = b.beanName.toLowerCase();
                     const regions = ['ethiopia', 'colombia', 'kenya', 'guatemala', 'brazil', 'costa rica', 'sumatra', 'rwanda', 'panama', 'yirgacheffe', 'huila'];
                     regions.forEach(reg => {
@@ -1404,6 +1481,8 @@
             document.querySelectorAll('.modal-backdrop').forEach(m => m.classList.remove('active'));
             selectedCalendarDateStr = null;
             beanNameToEdit = null;
+            beanNameToDelete = null;
+            pendingBrewData = null;
         }
 
         function renderCalendarGrid() {
