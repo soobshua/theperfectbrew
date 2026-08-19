@@ -146,7 +146,6 @@
             margin-top: 0.25rem;
         }
 
-        /* Tooltip hint */
         .widget-card::after {
             content: attr(data-tooltip);
             position: absolute;
@@ -163,6 +162,40 @@
             border-radius: var(--radius);
             padding: 1.5rem;
             box-shadow: 0 2px 12px rgba(0,0,0,0.01);
+        }
+
+        /* Action Card for Logging on Main Page */
+        .action-card {
+            background: linear-gradient(135deg, var(--text-main), #4A4540);
+            color: var(--bg-color);
+            border-radius: var(--radius);
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            cursor: pointer;
+            transition: var(--transition);
+            box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+        }
+
+        .action-card:hover {
+            transform: translateY(-2px);
+            opacity: 0.95;
+        }
+
+        .action-card h3, .action-card p {
+            color: var(--bg-color);
+        }
+
+        .action-card h3 {
+            font-size: 1.15rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .action-card p {
+            font-size: 0.85rem;
+            opacity: 0.8;
         }
 
         /* Form Controls */
@@ -226,6 +259,12 @@
             color: var(--text-main);
         }
 
+        .button-group {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+
         /* Multi-step Flow Container */
         .step-container {
             display: flex;
@@ -237,7 +276,7 @@
             display: none !important;
         }
 
-        /* Timer & Fitness Ring UI */
+        /* Timer & Fitness Ring UI (Cumulative Segments) */
         .timer-view {
             display: flex;
             flex-direction: column;
@@ -268,11 +307,10 @@
             stroke-width: 16;
         }
 
-        .ring-progress {
+        .ring-segment {
             fill: none;
             stroke-width: 16;
             stroke-linecap: round;
-            transition: stroke-dashoffset 0.1s linear, stroke 0.3s ease;
         }
 
         .timer-center-btn {
@@ -471,12 +509,6 @@
         }
 
         /* Stats & Optimizer View */
-        .stats-section {
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
-        }
-
         .optimizer-box {
             background: var(--accent-beige);
             border-radius: 12px;
@@ -498,38 +530,15 @@
             color: var(--text-main);
         }
 
-        /* Stack visual */
-        .stack-preview {
-            width: 100%;
-            height: 120px;
-            background: linear-gradient(135deg, var(--accent-beige), var(--border-color));
-            border-radius: var(--radius);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            position: relative;
-            cursor: pointer;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.04);
-            transition: var(--transition);
-        }
-
-        .stack-preview:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(0,0,0,0.08);
-        }
-
-        .stack-preview-content {
-            text-align: center;
-        }
-
-        .stack-preview-content h3 {
-            font-size: 1.1rem;
-            font-weight: 700;
-        }
-
-        .stack-preview-content p {
-            font-size: 0.8rem;
-            color: var(--text-muted);
+        .bean-tips-box {
+            background: #F0EDE6;
+            border-left: 3px solid var(--accent-terracotta);
+            padding: 0.85rem;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            line-height: 1.4;
+            margin-top: 0.5rem;
+            display: none;
         }
     </style>
 </head>
@@ -541,7 +550,6 @@
             <h1>BrewLog</h1>
             <nav>
                 <button class="nav-btn active" onclick="switchTab('dashboard')">Home</button>
-                <button class="nav-btn" onclick="switchTab('log')">New Cup</button>
                 <button class="nav-btn" onclick="switchTab('stats')">Analytics</button>
             </nav>
         </header>
@@ -557,22 +565,13 @@
                 <div class="widget-card" onclick="openCalendarModal()" data-tooltip="See past brews">
                     <div class="widget-icon">📅</div>
                     <div class="widget-title">Brew Calendar</div>
-                    <div class="widget-sub" id="calendar-snippet">View history stack</div>
+                    <div class="widget-sub">View brew history</div>
                 </div>
             </div>
 
-            <div class="card stack-preview" onclick="openCalendarModal()">
-                <div class="stack-preview-content">
-                    <h3>Recent Brews Stack</h3>
-                    <p id="total-brews-count">0 cups logged in total</p>
-                </div>
-            </div>
-
-            <div class="card">
-                <h3 style="font-size: 1rem; margin-bottom: 0.75rem;">Quick Stats & Tips</h3>
-                <div id="dashboard-optimizer" class="optimizer-text">
-                    Log your first coffee to unlock personalized optimization suggestions!
-                </div>
+            <div class="action-card" onclick="switchTab('log')">
+                <h3>+ Log New Cup</h3>
+                <p>Record your parameters, timer, and tasting notes</p>
             </div>
         </section>
 
@@ -613,7 +612,10 @@
                         </div>
                     </div>
 
-                    <button class="btn" onclick="goToStep(2)">Next: Grind & Ratio</button>
+                    <!-- Dynamic Bean Tips Container -->
+                    <div id="bean-tips-container" class="bean-tips-box"></div>
+
+                    <button class="btn" style="margin-top: 0.5rem;" onclick="goToStep(2)">Next: Grind & Ratio</button>
                 </div>
 
                 <!-- Step 2: Grind, Ratio & Temp -->
@@ -645,7 +647,7 @@
                         <div class="form-group">
                             <label>Include Bloom Phase?</label>
                             <select id="param-bloom">
-                                <option value="yes" selected>Yes (30s bloom)</option>
+                                <option value="yes" selected>Yes</option>
                                 <option value="no">No</option>
                             </select>
                         </div>
@@ -655,7 +657,7 @@
                         </div>
                     </div>
 
-                    <div style="display: flex; gap: 0.5rem;">
+                    <div class="button-group">
                         <button class="btn btn-secondary" onclick="goToStep(1)">Back</button>
                         <button class="btn" onclick="startTimerSession()">Start Brew Timer</button>
                     </div>
@@ -667,9 +669,9 @@
                         <div class="timer-status-text" id="timer-status-instruction">Ready to Bloom</div>
                         
                         <div class="ring-container">
-                            <svg class="ring-svg" viewBox="0 0 100 100">
+                            <svg class="ring-svg" viewBox="0 0 100 100" id="ring-svg-element">
                                 <circle class="ring-bg" cx="50" cy="50" r="42"></circle>
-                                <circle class="ring-progress" id="ring-progress-bar" cx="50" cy="50" r="42" stroke-dasharray="264" stroke-dashoffset="264"></circle>
+                                <!-- Segments injected dynamically -->
                             </svg>
                             <button class="timer-center-btn" onclick="handleTimerButtonPress()">
                                 <span class="timer-state-label" id="timer-action-label">Tap to Start</span>
@@ -681,6 +683,8 @@
                             Phase 0 of 0
                         </div>
                     </div>
+
+                    <button class="btn btn-secondary" onclick="goToStep(2)">Back</button>
                 </div>
 
                 <!-- Step 4: Rating & Notes -->
@@ -693,7 +697,10 @@
                         <label>Tasting Notes & Reflections</label>
                         <textarea id="complete-notes" rows="3" placeholder="Clean cup, balanced acidity, sweet finish..."></textarea>
                     </div>
-                    <button class="btn" onclick="saveBrewCard()">Save Brew Card</button>
+                    <div class="button-group">
+                        <button class="btn btn-secondary" onclick="goToStep(3)">Back</button>
+                        <button class="btn" onclick="saveBrewCard()">Save Brew Card</button>
+                    </div>
                 </div>
 
             </div>
@@ -772,13 +779,16 @@
             document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
             
             document.getElementById(`view-${tabId}`).classList.add('active');
-            event.target.classList.add('active');
+            if (tabId === 'dashboard') {
+                document.querySelector('nav .nav-btn').classList.add('active');
+            } else if (tabId === 'stats') {
+                document.querySelectorAll('nav .nav-btn')[1].classList.add('active');
+                renderAnalytics();
+            }
 
             if (tabId === 'log') {
                 populateBeanDropdown();
-            }
-            if (tabId === 'stats') {
-                renderAnalytics();
+                goToStep(1);
             }
         }
 
@@ -798,10 +808,42 @@
         function handleBeanSelectChange() {
             const val = document.getElementById('bean-select').value;
             const newFields = document.getElementById('new-bean-fields');
+            const tipsContainer = document.getElementById('bean-tips-container');
+
             if (val === 'new') {
                 newFields.style.display = 'flex';
+                tipsContainer.style.display = 'none';
             } else {
                 newFields.style.display = 'none';
+                // Existing bean selected: generate tips based on past brews
+                const selectedBeanName = db.beans[val].name;
+                const pastBrews = db.brews.filter(b => b.beanName.toLowerCase() === selectedBeanName.toLowerCase());
+                
+                if (pastBrews.length > 0) {
+                    let tipsHtml = `<strong>💡 Past Brew Insights for ${selectedBeanName}:</strong><br>`;
+                    let acidicCount = 0;
+                    let bitterCount = 0;
+                    let lastGrind = pastBrews[0].grind;
+                    let lastTemp = pastBrews[0].temp;
+
+                    pastBrews.forEach(b => {
+                        const notesLower = (b.notes || '').toLowerCase();
+                        if (notesLower.includes('sour') || notesLower.includes('acidic') || notesLower.includes('under')) acidicCount++;
+                        if (notesLower.includes('bitter') || notesLower.includes('astringent') || notesLower.includes('over')) bitterCount++;
+                    });
+
+                    if (acidicCount > bitterCount) {
+                        tipsHtml += `- Previous cups noted acidity/sourness. Try grinding slightly finer (current avg around ${lastGrind}) or raising water temp (currently ${lastTemp}°C) for higher extraction.`;
+                    } else if (bitterCount > acidicCount) {
+                        tipsHtml += `- Previous cups noted bitterness. Try grinding coarser or lowering water temp slightly to reduce over-extraction.`;
+                    } else {
+                        tipsHtml += `- Average rating across ${pastBrews.length} brews is ${(pastBrews.reduce((acc,c)=>acc+c.rank,0)/pastBrews.length).toFixed(1)}/10. Recent grind: ${lastGrind}, Temp: ${lastTemp}°C.`;
+                    }
+                    tipsContainer.innerHTML = tipsHtml;
+                    tipsContainer.style.display = 'block';
+                } else {
+                    tipsContainer.style.display = 'none';
+                }
             }
         }
 
@@ -813,7 +855,6 @@
 
             if (stepNum === 1) document.getElementById('step-beans').classList.remove('step-hidden');
             if (stepNum === 2) {
-                // Validate bean selection
                 const beanVal = document.getElementById('bean-select').value;
                 if (beanVal === 'new') {
                     const name = document.getElementById('bean-name').value.trim();
@@ -825,11 +866,16 @@
                 }
                 document.getElementById('step-params').classList.remove('step-hidden');
             }
+            if (stepNum === 3) {
+                document.getElementById('step-timer').classList.remove('step-hidden');
+            }
+            if (stepNum === 4) {
+                document.getElementById('step-complete').classList.remove('step-hidden');
+            }
         }
 
-        // Timer & Recipe Structure Setup
+        // Timer & Recipe Structure Setup (Cumulative Circle Segments)
         function startTimerSession() {
-            // Gather inputs
             const beanVal = document.getElementById('bean-select').value;
             if (beanVal === 'new') {
                 activeBrew.beanName = document.getElementById('bean-name').value.trim();
@@ -849,42 +895,66 @@
             activeBrew.bloom = document.getElementById('param-bloom').value;
             activeBrew.poursCount = parseInt(document.getElementById('param-pours').value) || 2;
 
-            // Build phases
             activeBrew.phases = [];
             if (activeBrew.bloom === 'yes') {
-                activeBrew.phases.push({ name: 'Bloom', duration: 30, color: 'var(--accent-beige)' });
+                activeBrew.phases.push({ name: 'Bloom', duration: 30, color: '#D4C5B9' }); // Beige
             }
             for (let i = 1; i <= activeBrew.poursCount; i++) {
-                activeBrew.phases.push({ name: `Pour ${i}`, duration: 15, color: 'var(--accent-terracotta)' });
-                activeBrew.phases.push({ name: `Drawdown ${i}`, duration: 45, color: 'var(--accent-olive)' });
+                activeBrew.phases.push({ name: `Pour ${i}`, duration: 15, color: '#BC6C25' }); // Terracotta
+                activeBrew.phases.push({ name: `Drawdown ${i}`, duration: 45, color: '#606C38' }); // Olive
             }
 
             activeBrew.currentPhaseIdx = 0;
             totalTimerSeconds = 0;
             phaseTimerSeconds = 0;
+            isTimerRunning = false;
 
-            document.getElementById('step-params').classList.add('step-hidden');
-            document.getElementById('step-timer').classList.remove('step-hidden');
-
+            goToStep(3);
             updateTimerUI();
+            renderRingSegments();
+        }
+
+        function renderRingSegments() {
+            const svg = document.getElementById('ring-svg-element');
+            // Remove existing segments except bg circle
+            const existingSegments = svg.querySelectorAll('.ring-segment');
+            existingSegments.forEach(el => el.remove());
+
+            const totalDuration = activeBrew.phases.reduce((sum, p) => sum + p.duration, 0);
+            let accumulatedSeconds = 0;
+            const circumference = 264; // 2 * PI * 42
+
+            activeBrew.phases.forEach((phase, idx) => {
+                const startOffset = circumference - (circumference * (accumulatedSeconds / totalDuration));
+                accumulatedSeconds += phase.duration;
+                const endOffset = circumference - (circumference * (accumulatedSeconds / totalDuration));
+                
+                const strokeLength = startOffset - endOffset;
+
+                const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                circle.setAttribute('class', 'ring-segment');
+                circle.setAttribute('cx', '50');
+                circle.setAttribute('cy', '50');
+                circle.setAttribute('r', '42');
+                circle.setAttribute('stroke', phase.color);
+                circle.setAttribute('stroke-dasharray', `${strokeLength} ${circumference}`);
+                circle.setAttribute('stroke-dashoffset', `${startOffset}`);
+                circle.setAttribute('id', `ring-seg-${idx}`);
+                svg.appendChild(circle);
+            });
         }
 
         function updateTimerUI() {
             const phase = activeBrew.phases[activeBrew.currentPhaseIdx];
-            document.getElementById('timer-status-instruction').textContent = phase.name;
-            document.getElementById('timer-phase-counter').textContent = `Phase ${activeBrew.currentPhaseIdx + 1} of ${activeBrew.phases.length}`;
-            document.getElementById('timer-action-label').textContent = isTimerRunning ? 'Pause / Next' : 'Tap to Start';
+            if (phase) {
+                document.getElementById('timer-status-instruction').textContent = phase.name;
+                document.getElementById('timer-phase-counter').textContent = `Phase ${activeBrew.currentPhaseIdx + 1} of ${activeBrew.phases.length}`;
+            }
+            document.getElementById('timer-action-label').textContent = isTimerRunning ? 'Next / Lap' : 'Tap to Start';
             
             const mins = Math.floor(totalTimerSeconds / 60);
             const secs = totalTimerSeconds % 60;
             document.getElementById('timer-clock').textContent = `${mins}:${secs < 10 ? '0' : ''}${secs}`;
-
-            // Ring progress update
-            const ringProg = document.getElementById('ring-progress-bar');
-            ringProg.style.stroke = phase.color;
-            const progressRatio = Math.min(phaseTimerSeconds / phase.duration, 1);
-            const dashoffset = 264 - (264 * progressRatio);
-            ringProg.style.strokeDashoffset = dashoffset;
         }
 
         function handleTimerButtonPress() {
@@ -895,14 +965,12 @@
                     phaseTimerSeconds++;
                     
                     const phase = activeBrew.phases[activeBrew.currentPhaseIdx];
-                    // Automatic transition if phase duration met
-                    if (phaseTimerSeconds >= phase.duration) {
+                    if (phase && phaseTimerSeconds >= phase.duration) {
                         advanceTimerPhase();
                     }
                     updateTimerUI();
                 }, 1000);
             } else {
-                // Manual lap / advance to next phase
                 advanceTimerPhase();
             }
             updateTimerUI();
@@ -912,13 +980,9 @@
             phaseTimerSeconds = 0;
             activeBrew.currentPhaseIdx++;
             if (activeBrew.currentPhaseIdx >= activeBrew.phases.length) {
-                // End of timer sequence
                 clearInterval(timerInterval);
                 isTimerRunning = false;
-                
-                // Transition to rating step
-                document.getElementById('step-timer').classList.add('step-hidden');
-                document.getElementById('step-complete').classList.remove('step-hidden');
+                goToStep(4);
             }
         }
 
@@ -941,7 +1005,6 @@
                 notes: notes
             };
 
-            // Save bean if new
             let existingBean = db.beans.find(b => b.name.toLowerCase() === activeBrew.beanName.toLowerCase());
             if (!existingBean) {
                 db.beans.push({
@@ -954,36 +1017,8 @@
             db.brews.unshift(newBrew);
             localStorage.setItem('brewlog_db', JSON.stringify(db));
 
-            // Reset form & return home
-            alert('Brew card successfully saved!');
             document.getElementById('complete-notes').value = '';
-            updateDashboardMetrics();
             switchTab('dashboard');
-        }
-
-        // Dashboard & Analytics
-        function updateDashboardMetrics() {
-            document.getElementById('total-brews-count').textContent = `${db.brews.length} cups logged in total`;
-            
-            if (db.brews.length > 0) {
-                // Calculate basic optimizer suggestion
-                const beanMap = {};
-                db.brews.forEach(b => {
-                    if (!beanMap[b.beanName]) beanMap[b.beanName] = [];
-                    beanMap[b.beanName].push(b);
-                });
-
-                let bestBean = '';
-                let highestAvg = 0;
-                for (let bean in beanMap) {
-                    const avg = beanMap[bean].reduce((acc, curr) => acc + curr.rank, 0) / beanMap[bean].length;
-                    if (avg > highestAvg) {
-                        highestAvg = avg;
-                        bestBean = bean;
-                    }
-                }
-                document.getElementById('dashboard-optimizer').innerHTML = `Your top performing bean is <strong>${bestBean}</strong> (avg rating: ${highestAvg.toFixed(1)}/10). Keep track of your grind adjustments to optimize extraction!`;
-            }
         }
 
         function renderAnalytics() {
@@ -993,7 +1028,6 @@
                 return;
             }
 
-            // Group by bean
             const groups = {};
             db.brews.forEach(b => {
                 if (!groups[b.beanName]) groups[b.beanName] = [];
@@ -1004,8 +1038,6 @@
             for (let beanName in groups) {
                 const brews = groups[beanName];
                 const avgRank = brews.reduce((sum, c) => sum + c.rank, 0) / brews.length;
-                
-                // Find most common grind size for highest ratings
                 const sortedByRank = [...brews].sort((a,b) => b.rank - a.rank);
                 const optimalGrind = sortedByRank[0].grind;
 
@@ -1030,19 +1062,50 @@
             if (db.brews.length === 0) {
                 body.innerHTML = `<p>Log some coffee cups to generate your taster profile.</p>`;
             } else {
-                // Compile profile metrics
+                // Region extraction (approximate from bean names containing parentheses or words)
+                const regionCounts = {};
+                db.brews.forEach(b => {
+                    // Extract region/country proxy from beanName
+                    const region = b.beanName.split(' ')[0] || 'Unknown';
+                    regionCounts[region] = (regionCounts[region] || 0) + 1;
+                });
+                let topRegion = Object.keys(regionCounts).reduce((a, b) => regionCounts[a] > regionCounts[b] ? a : b);
+
                 const roastCounts = {};
                 db.brews.forEach(b => roastCounts[b.roast] = (roastCounts[b.roast] || 0) + 1);
-                let preferredRoast = Object.keys(roastCounts).reduce((a, b) => roastCounts[a] > roastCounts[b] ? a : b);
+                let topRoast = Object.keys(roastCounts).reduce((a, b) => roastCounts[a] > roastCounts[b] ? a : b);
 
-                const avgGrind = (db.brews.reduce((acc, c) => acc + c.grind, 0) / db.brews.length).toFixed(1);
+                // Collect & rank tasting notes
+                const noteCounts = {};
+                db.brews.forEach(b => {
+                    if (b.flavor) {
+                        b.flavor.split(',').forEach(tag => {
+                            const clean = tag.trim().toLowerCase();
+                            if (clean) noteCounts[clean] = (noteCounts[clean] || 0) + 1;
+                        });
+                    }
+                    if (b.notes) {
+                        b.notes.split(' ').forEach(word => {
+                            const clean = word.replace(/[^a-zA-Z]/g, '').toLowerCase();
+                            if (clean.length > 3) noteCounts[clean] = (noteCounts[clean] || 0) + 1;
+                        });
+                    }
+                });
+
+                const sortedNotes = Object.keys(noteCounts).sort((a,b) => noteCounts[b] - noteCounts[a]).slice(0, 3);
 
                 body.innerHTML = `
-                    <p>Based on your <strong>${db.brews.length}</strong> recorded brews:</p>
+                    <p>Compiled from your <strong>${db.brews.length}</strong> recorded brews:</p>
                     <ul style="padding-left: 1.25rem; display: flex; flex-direction: column; gap: 0.5rem;">
-                        <li><strong>Preferred Roast:</strong> ${preferredRoast} roast profile.</li>
-                        <li><strong>Average Grind Setting:</strong> ${avgGrind} clicks.</li>
-                        <li><strong>Extraction Style:</strong> Consistent multi-pour pour-over workflows.</li>
+                        <li><strong>Region:</strong> ${topRegion}</li>
+                        <li><strong>Roast:</strong> ${topRoast}</li>
+                        <li><strong>Top 3 Tasting Notes:</strong>
+                            <ol style="padding-left: 1.25rem; margin-top: 0.25rem;">
+                                <li>${sortedNotes[0] ? sortedNotes[0] : 'Balanced'}</li>
+                                <li>${sortedNotes[1] ? sortedNotes[1] : 'Sweet'}</li>
+                                <li>${sortedNotes[2] ? sortedNotes[2] : 'Clean'}</li>
+                            </ol>
+                        </li>
                     </ul>
                 `;
             }
@@ -1129,11 +1192,6 @@
             });
             container.innerHTML = html;
         }
-
-        // Initialize on load
-        window.onload = function() {
-            updateDashboardMetrics();
-        };
     </script>
 </body>
 </html>
