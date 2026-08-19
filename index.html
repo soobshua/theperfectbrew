@@ -512,10 +512,16 @@
 </div>
 
 <script>
+    // Load persisted data from localStorage or initialize defaults
     const db = {
-        beans: [],
-        sessions: []
+        beans: JSON.parse(localStorage.getItem('pour_over_beans')) || [],
+        sessions: JSON.parse(localStorage.getItem('pour_over_sessions')) || []
     };
+
+    function persistData() {
+        localStorage.setItem('pour_over_beans', JSON.stringify(db.beans));
+        localStorage.setItem('pour_over_sessions', JSON.stringify(db.sessions));
+    }
 
     let activeBrew = {};
     let brewPhases = [];
@@ -597,7 +603,6 @@
         goToStep(2);
     }
 
-    // Helper to calculate average ranking score for a bean based on past sessions
     function getBeanAverageScore(beanName) {
         const matchingSessions = db.sessions.filter(s => s.beanName === beanName);
         if (matchingSessions.length === 0) return 0;
@@ -605,7 +610,6 @@
         return sum / matchingSessions.length;
     }
 
-    // Bean Manager Grouped by Type and Sorted by Average Ranking Score
     function renderBeanManager() {
         const container = document.getElementById('bean-manager-list');
         if (db.beans.length === 0) {
@@ -613,7 +617,6 @@
             return;
         }
 
-        // Group beans by flavor type / category
         const groups = {};
         db.beans.forEach((b, idx) => {
             const type = b.flavorType || 'Fruity';
@@ -621,7 +624,6 @@
             groups[type].push({ ...b, originalIndex: idx });
         });
 
-        // Within each group, sort beans by average ranking score descending
         Object.keys(groups).forEach(type => {
             groups[type].sort((a, b) => getBeanAverageScore(b.name) - getBeanAverageScore(a.name));
         });
@@ -673,6 +675,7 @@
             db.beans[editIdx].flavor = flavor;
         }
 
+        persistData();
         resetBeanManagerForm();
         renderBeanManager();
     }
@@ -700,10 +703,10 @@
 
     function toggleArchiveBean(idx) {
         db.beans[idx].archived = !db.beans[idx].archived;
+        persistData();
         renderBeanManager();
     }
 
-    // Coffee Taster Profile Dashboard Analytics
     function renderTasterProfile() {
         const container = document.getElementById('taster-profile-content');
         if (db.sessions.length === 0) {
@@ -711,7 +714,6 @@
             return;
         }
 
-        // Aggregate stats from sessions & associated beans
         const roastCounts = {};
         const countryCounts = {};
         const noteCounts = {};
@@ -721,13 +723,11 @@
             const roast = matchingBean.roast || 'Light';
             roastCounts[roast] = (roastCounts[roast] || 0) + 1;
 
-            // Extract country name inside parentheses if provided (e.g. "Kenya Nyeri Hill (Kenya)")
             const nameStr = s.beanName || '';
             const match = nameStr.match(/\(([^)]+)\)/);
             const country = match ? match[1].trim() : 'Global Blend / Unspecified';
             countryCounts[country] = (countryCounts[country] || 0) + 1;
 
-            // Process tasting notes separated by commas
             if (s.notes) {
                 s.notes.split(',').forEach(n => {
                     const cleanNote = n.trim().toLowerCase();
@@ -738,11 +738,9 @@
             }
         });
 
-        // Determine favorites
         const favRoast = Object.keys(roastCounts).reduce((a, b) => roastCounts[a] > roastCounts[b] ? a : b, 'None');
         const favCountry = Object.keys(countryCounts).reduce((a, b) => countryCounts[a] > countryCounts[b] ? a : b, 'None');
 
-        // Rank top 3 tasting notes
         const sortedNotes = Object.keys(noteCounts).sort((a, b) => noteCounts[b] - noteCounts[a]);
         const top3Notes = sortedNotes.slice(0, 3);
 
@@ -766,7 +764,6 @@
         `;
     }
 
-    // Stopwatch & Brew Logic
     function initStopwatchSession() {
         const beanVal = document.getElementById('bean-select').value;
         if (beanVal === 'new') {
@@ -776,6 +773,7 @@
             const flavor = document.getElementById('bean-flavor').value.trim();
             
             db.beans.push({ name, roast, flavorType, flavor, archived: false });
+            persistData();
             activeBrew.beanName = name;
             activeBrew.roast = roast;
             activeBrew.flavor = flavor;
@@ -942,6 +940,7 @@
         activeBrew.date = new Date().toLocaleDateString();
 
         db.sessions.unshift(activeBrew);
+        persistData();
         renderHistoryList();
         goToStep(4);
     }
