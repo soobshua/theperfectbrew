@@ -632,7 +632,7 @@
         select.innerHTML = '<option value="" disabled selected>-- Select a Bean Profile --</option>';
         db.beans.filter(b => !b.archived).forEach((b) => {
             const opt = document.createElement('option');
-            opt.value = b.id || ('b_legacy_' + Math.random()); // fallback value if id missing
+            opt.value = b.id || ('b_legacy_' + Math.random());
             opt.textContent = `${b.name} (${b.origin || 'Unknown Origin'}) - ${b.roast}`;
             select.appendChild(opt);
         });
@@ -655,14 +655,12 @@
         const container = document.getElementById('bean-manager-list');
         container.innerHTML = db.beans.length === 0 ? '<p style="font-size: 0.85rem; color: var(--text-muted);">No beans added.</p>' : '';
         
-        // Sort beans so archived ones are pushed to the bottom
         const sortedBeans = [...db.beans].sort((a, b) => (a.archived === b.archived ? 0 : a.archived ? 1 : -1));
 
         sortedBeans.forEach((b, index) => {
             const roasteryText = b.roastery ? ` | ${b.roastery}` : '';
             const hasId = !!b.id;
             
-            // If it's a legacy bean without an ID, provide a special "Fix & Edit" button
             let actionButtons = '';
             if (hasId) {
                 actionButtons = `
@@ -691,10 +689,8 @@
     }
 
     function fixAndEditLegacyBean(arrayIndex) {
-        // Assign a fresh ID to the legacy bean
         db.beans[arrayIndex].id = 'b_' + Date.now() + '_' + arrayIndex;
         persistData();
-        // Open it in the edit form
         editBean(db.beans[arrayIndex].id);
     }
 
@@ -860,8 +856,8 @@
             const profileKey = `${s.beanName}|${s.origin}|${s.roastery}|${s.roast}|${s.flavorType}`;
             if (!grouped[profileKey]) {
                 grouped[profileKey] = {
-                    title: `${s.beanName} (${s.origin})${s.roastery ? ' - ' + s.roastery : ''}`,
-                    subtitle: `${s.roast} | ${s.flavorType || 'Fruity'}`,
+                    beanName: s.beanName,
+                    roastery: s.roastery || '',
                     sessions: []
                 };
             }
@@ -882,18 +878,19 @@
                 suggestion = `Best results achieved at grind setting ${bestCup.grind} clicks with ${bestCup.temp}°C water.`;
             }
 
+            const headerTitle = group.roastery ? `${group.beanName} (${group.roastery})` : group.beanName;
+
             html += `
                 <div class="grouped-history-card">
                     <div class="history-avg-badge">
                         <span class="score-val">${avgScore}</span>
                         <span class="score-label">Avg Rank</span>
                     </div>
-                    <h3>${group.title}</h3>
-                    <div class="history-meta-sub">${group.subtitle} | Cups Brewed: <strong>${totalCups}</strong></div>
+                    <h3>${headerTitle}</h3>
                     
-                    <div class="history-section-divider">
-                        <strong>⭐ Best Cup Stats:</strong><br>
-                        Score: ${bestCup.score}/10 | Grind: ${bestCup.grind} clicks | Temp: ${bestCup.temp}°C<br>
+                    <div class="history-section-divider" style="border-top: none; margin-top: 0; padding-top: 4px;">
+                        <strong>No. of Cups:</strong> ${totalCups}<br>
+                        <strong>⭐ Best Cup Stats:</strong> Score: ${bestCup.score}/10 | Grind: ${bestCup.grind} clicks | Temp: ${bestCup.temp}°C<br>
                         <span style="color: var(--text-muted);">Notes: ${bestCup.notes || 'None recorded'} (${bestCup.date})</span>
                     </div>
 
