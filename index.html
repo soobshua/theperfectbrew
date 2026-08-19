@@ -295,14 +295,14 @@
             display: none !important;
         }
 
-        /* Timer & Fitness Ring UI */
+        /* Continuous Snake Timer UI */
         .timer-view {
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            gap: 2rem;
-            padding: 2rem 0;
+            gap: 1.5rem;
+            padding: 1rem 0;
         }
 
         .ring-container {
@@ -330,7 +330,7 @@
             fill: none;
             stroke-width: 16;
             stroke-linecap: round;
-            transition: stroke-dasharray 0.3s linear;
+            transition: stroke-dasharray 0.3s linear, stroke-dashoffset 0.3s linear;
         }
 
         .timer-center-btn {
@@ -355,7 +355,7 @@
         }
 
         .timer-state-label {
-            font-size: 0.8rem;
+            font-size: 0.75rem;
             text-transform: uppercase;
             letter-spacing: 0.05em;
             color: var(--text-muted);
@@ -369,10 +369,11 @@
         }
 
         .timer-status-text {
-            font-size: 1rem;
+            font-size: 0.95rem;
             font-weight: 600;
             color: var(--accent-terracotta);
             text-align: center;
+            min-height: 1.4rem;
         }
 
         /* Calendar View */
@@ -586,16 +587,92 @@
             color: var(--text-main);
         }
 
-        /* Stats & Optimizer View */
+        /* Stats & Optimizer View with Search Dropdown */
+        .search-dropdown-container {
+            position: relative;
+            margin-bottom: 1.25rem;
+        }
+
+        .search-dropdown-input {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            background: var(--bg-color);
+            font-size: 0.95rem;
+            color: var(--text-main);
+            transition: var(--transition);
+        }
+
+        .search-dropdown-input:focus {
+            outline: none;
+            border-color: var(--text-main);
+            background: var(--card-bg);
+        }
+
+        .search-suggestions-list {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            margin-top: 4px;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 50;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+            display: none;
+        }
+
+        .search-suggestions-list.active {
+            display: block;
+        }
+
+        .suggestion-item {
+            padding: 0.75rem 1rem;
+            font-size: 0.9rem;
+            cursor: pointer;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: background 0.2s ease;
+        }
+
+        .suggestion-item:last-child {
+            border-bottom: none;
+        }
+
+        .suggestion-item:hover {
+            background: var(--bg-color);
+        }
+
+        .suggestion-item-score {
+            font-size: 0.75rem;
+            font-weight: 700;
+            background: var(--accent-olive);
+            color: #fff;
+            padding: 0.15rem 0.5rem;
+            border-radius: 6px;
+        }
+
         .optimizer-box {
-            background: var(--accent-beige);
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
             border-radius: 12px;
             padding: 1.25rem;
             display: flex;
             flex-direction: column;
             gap: 0.5rem;
             margin-bottom: 1rem;
-            position: relative;
+            transition: var(--transition);
+        }
+
+        .optimizer-box.highlighted {
+            border-color: var(--accent-terracotta);
+            box-shadow: 0 0 0 2px rgba(188, 108, 37, 0.2);
         }
 
         .optimizer-top-row {
@@ -606,14 +683,24 @@
 
         .optimizer-title {
             font-weight: 700;
-            font-size: 0.95rem;
+            font-size: 1rem;
             color: var(--text-main);
+        }
+
+        .optimizer-rank-badge {
+            background: var(--text-main);
+            color: var(--bg-color);
+            padding: 0.2rem 0.6rem;
+            border-radius: 8px;
+            font-size: 0.75rem;
+            font-weight: 700;
         }
 
         .optimizer-text {
             font-size: 0.85rem;
             line-height: 1.5;
-            color: var(--text-main);
+            color: var(--text-muted);
+            margin-top: 0.25rem;
         }
 
         .bean-tips-box {
@@ -677,7 +764,7 @@
 
                     <div id="new-bean-fields" style="display: flex; flex-direction: column; gap: 1rem;">
                         <div class="form-group">
-                            <label>Bean Name & Origin</label>
+                            <label>Bean Name & Roaster</label>
                             <input type="text" id="bean-name" placeholder="e.g. Ethiopia Yirgacheffe (Roastery X)">
                         </div>
                         <div class="row">
@@ -749,15 +836,15 @@
                     </div>
                 </div>
 
-                <!-- Step 3: Timer & Fitness Ring -->
+                <!-- Step 3: Timer & Continuous Snake Ring -->
                 <div id="step-timer" class="step-container step-hidden">
                     <div class="timer-view">
-                        <div class="timer-status-text" id="timer-status-instruction">Ready to Bloom</div>
+                        <div class="timer-status-text" id="timer-status-instruction">Tap to Start Brew</div>
                         
                         <div class="ring-container">
-                            <svg class="ring-svg" viewBox="0 0 100 100" id="ring-svg-element">
+                            <svg class="ring-svg" viewBox="0 0 100 100">
                                 <circle class="ring-bg" cx="50" cy="50" r="42"></circle>
-                                <circle id="active-ring-segment" class="ring-segment" cx="50" cy="50" r="42" stroke="#D4C5B9" stroke-dasharray="0 264" stroke-dashoffset="0"></circle>
+                                <circle id="snake-ring" class="ring-segment" cx="50" cy="50" r="42" stroke="#D4C5B9" stroke-dasharray="0 264" stroke-dashoffset="0"></circle>
                             </svg>
                             <button class="timer-center-btn" onclick="handleTimerButtonPress()">
                                 <span class="timer-state-label" id="timer-action-label">Tap to Start</span>
@@ -795,9 +882,16 @@
         <!-- ANALYTICS VIEW -->
         <section id="view-stats" class="view">
             <div class="card">
-                <h2 style="font-size: 1.2rem; margin-bottom: 1rem;">Bean Groupings & Optimization</h2>
+                <h2 style="font-size: 1.2rem; margin-bottom: 1rem;">Bean Rankings & Optimization</h2>
+                
+                <!-- Search & Jump Dropdown Bar -->
+                <div class="search-dropdown-container">
+                    <input type="text" id="analytics-search-input" class="search-dropdown-input" placeholder="Search bean or roaster to jump..." oninput="handleSearchInput()" onfocus="handleSearchInput()">
+                    <div id="search-suggestions-dropdown" class="search-suggestions-list"></div>
+                </div>
+
                 <div id="bean-stats-container" style="display: flex; flex-direction: column; gap: 1rem;">
-                    <p style="color: var(--text-muted); font-size: 0.9rem;">No data recorded yet. Log your first cup to view optimizations.</p>
+                    <p style="color: var(--text-muted); font-size: 0.9rem;">No data recorded yet. Log your first cup to view rankings.</p>
                 </div>
             </div>
         </section>
@@ -821,12 +915,8 @@
             <div class="calendar-header">
                 <h2 style="font-size: 1.25rem;" id="calendar-month-title">Brew Calendar</h2>
             </div>
-            <div class="calendar-grid" id="calendar-grid-container">
-                <!-- Generated via JS -->
-            </div>
-            <div id="calendar-day-cards" style="margin-top: 1rem; display: flex; flex-direction: column; gap: 0.75rem;">
-                <!-- Cards for selected date will pop up here -->
-            </div>
+            <div class="calendar-grid" id="calendar-grid-container"></div>
+            <div id="calendar-day-cards" style="margin-top: 1rem; display: flex; flex-direction: column; gap: 0.75rem;"></div>
         </div>
     </div>
 
@@ -843,15 +933,12 @@
     </div>
 
     <script>
-        // State management & LocalStorage
         let db = JSON.parse(localStorage.getItem('brewlog_db')) || {
             beans: [],
             brews: []
         };
 
-        // Active brewing session temporary storage
         let activeBrew = {
-            beanId: null,
             beanName: '',
             roast: 'Medium',
             flavor: '',
@@ -862,19 +949,18 @@
             bloom: 'yes',
             poursCount: 2,
             phases: [],
-            currentPhaseIdx: 0,
-            totalTime: 0
+            currentPhaseIdx: 0
         };
 
         let timerInterval = null;
         let totalTimerSeconds = 0;
-        let phaseTimerSeconds = 0;
+        let totalMaxSeconds = 0;
         let isTimerRunning = false;
         let selectedCalendarDateStr = null;
         let brewIdPendingDelete = null;
+        let rankedBeansCache = [];
         const circumference = 264; // 2 * PI * 42
 
-        // Navigation
         function switchTab(tabId) {
             document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
             document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
@@ -893,7 +979,6 @@
             }
         }
 
-        // Dropdown handling
         function populateBeanDropdown() {
             const select = document.getElementById('bean-select');
             select.innerHTML = '<option value="new">+ Add New Bean</option>';
@@ -979,7 +1064,6 @@
             }
         }
 
-        // Timer & Recipe Setup
         function startTimerSession() {
             const beanVal = document.getElementById('bean-select').value;
             if (beanVal === 'new') {
@@ -1002,100 +1086,95 @@
 
             activeBrew.phases = [];
             if (activeBrew.bloom === 'yes') {
-                activeBrew.phases.push({ name: 'Bloom', color: '#D4C5B9' });
+                activeBrew.phases.push({ name: 'Bloom Phase', color: '#D4C5B9', duration: 30 });
             }
             for (let i = 1; i <= activeBrew.poursCount; i++) {
-                activeBrew.phases.push({ name: `Pour ${i}`, color: '#BC6C25' });
-                activeBrew.phases.push({ name: `Drawdown ${i}`, color: '#606C38' });
+                activeBrew.phases.push({ name: `Pour ${i}`, color: '#BC6C25', duration: 15 });
+                activeBrew.phases.push({ name: `Drawdown ${i}`, color: '#606C38', duration: 45 });
             }
 
-            activeBrew.currentPhaseIdx = 0;
+            totalMaxSeconds = activeBrew.phases.reduce((acc, p) => acc + p.duration, 0);
             totalTimerSeconds = 0;
-            phaseTimerSeconds = 0;
+            activeBrew.currentPhaseIdx = 0;
             isTimerRunning = false;
 
             goToStep(3);
-            resetRingSVG();
+            resetSnakeRing();
             updateTimerUI();
         }
 
-        function resetRingSVG() {
-            const svg = document.getElementById('ring-svg-element');
-            const existingSegments = svg.querySelectorAll('.extra-segment');
-            existingSegments.forEach(el => el.remove());
-
-            const activeSeg = document.getElementById('active-ring-segment');
-            activeSeg.setAttribute('stroke-dasharray', `0 ${circumference}`);
-            activeSeg.setAttribute('stroke-dashoffset', `${circumference}`);
-            if (activeBrew.phases.length > 0) {
-                activeSeg.setAttribute('stroke', activeBrew.phases[0].color);
-            }
+        function resetSnakeRing() {
+            const ring = document.getElementById('snake-ring');
+            ring.setAttribute('stroke', '#D4C5B9');
+            ring.setAttribute('stroke-dasharray', `0 ${circumference}`);
+            ring.setAttribute('stroke-dashoffset', '0');
         }
 
         function updateTimerUI() {
-            const phase = activeBrew.phases[activeBrew.currentPhaseIdx];
-            if (phase) {
-                document.getElementById('timer-status-instruction').textContent = `${phase.name} (${phaseTimerSeconds}s)`;
-                document.getElementById('timer-phase-counter').textContent = `Phase ${activeBrew.currentPhaseIdx + 1} of ${activeBrew.phases.length}`;
+            let accumulated = 0;
+            let currentPhaseObj = activeBrew.phases[0];
+            let phaseIdx = 0;
+            
+            for (let i = 0; i < activeBrew.phases.length; i++) {
+                let p = activeBrew.phases[i];
+                if (totalTimerSeconds <= accumulated + p.duration) {
+                    currentPhaseObj = p;
+                    phaseIdx = i;
+                    break;
+                }
+                accumulated += p.duration;
+                if (i === activeBrew.phases.length - 1) {
+                    currentPhaseObj = p;
+                    phaseIdx = i;
+                }
             }
-            document.getElementById('timer-action-label').textContent = isTimerRunning ? 'Next Phase' : 'Tap to Start';
+
+            activeBrew.currentPhaseIdx = phaseIdx;
+
+            document.getElementById('timer-status-instruction').textContent = `${currentPhaseObj.name} (${totalTimerSeconds}s / ${totalMaxSeconds}s)`;
+            document.getElementById('timer-phase-counter').textContent = `Phase ${phaseIdx + 1} of ${activeBrew.phases.length}`;
+            document.getElementById('timer-action-label').textContent = isTimerRunning ? 'Running...' : 'Tap to Start';
             
             const mins = Math.floor(totalTimerSeconds / 60);
             const secs = totalTimerSeconds % 60;
             document.getElementById('timer-clock').textContent = `${mins}:${secs < 10 ? '0' : ''}${secs}`;
 
-            const activeSeg = document.getElementById('active-ring-segment');
-            const progressRatio = Math.min(phaseTimerSeconds / 45, 1);
-            const dashLen = circumference * progressRatio;
-            activeSeg.setAttribute('stroke-dasharray', `${dashLen} ${circumference}`);
+            const progressRatio = Math.min(totalTimerSeconds / totalMaxSeconds, 1);
+            const snakeLength = circumference * progressRatio;
+
+            const ring = document.getElementById('snake-ring');
+            ring.setAttribute('stroke', currentPhaseObj.color);
+            ring.setAttribute('stroke-dasharray', `${snakeLength} ${circumference}`);
+            ring.setAttribute('stroke-dashoffset', `${circumference - snakeLength}`);
         }
 
         function handleTimerButtonPress() {
             if (!isTimerRunning) {
+                if (totalTimerSeconds >= totalMaxSeconds) {
+                    startTimerSession();
+                    return;
+                }
                 isTimerRunning = true;
                 timerInterval = setInterval(() => {
                     totalTimerSeconds++;
-                    phaseTimerSeconds++;
                     updateTimerUI();
+                    if (totalTimerSeconds >= totalMaxSeconds) {
+                        clearInterval(timerInterval);
+                        isTimerRunning = false;
+                        document.getElementById('timer-action-label').textContent = 'Done!';
+                        document.getElementById('timer-status-instruction').textContent = 'Brew session complete!';
+                        setTimeout(() => goToStep(4), 1000);
+                    }
                 }, 1000);
             } else {
-                advanceTimerPhase();
-            }
-        }
-
-        function advanceTimerPhase() {
-            const svg = document.getElementById('ring-svg-element');
-            const activeSeg = document.getElementById('active-ring-segment');
-            
-            const currentDashArray = activeSeg.getAttribute('stroke-dasharray');
-            const currentColor = activeSeg.getAttribute('stroke');
-
-            if (currentDashArray && !currentDashArray.startsWith('0 ')) {
-                const clone = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-                clone.setAttribute('class', 'extra-segment');
-                clone.setAttribute('cx', '50');
-                clone.setAttribute('cy', '50');
-                clone.setAttribute('r', '42');
-                clone.setAttribute('stroke', currentColor);
-                clone.setAttribute('stroke-width', '16');
-                clone.setAttribute('stroke-linecap', 'round');
-                clone.setAttribute('fill', 'none');
-                clone.setAttribute('stroke-dasharray', currentDashArray);
-                svg.insertBefore(clone, activeSeg);
-            }
-
-            phaseTimerSeconds = 0;
-            activeBrew.currentPhaseIdx++;
-
-            if (activeBrew.currentPhaseIdx >= activeBrew.phases.length) {
-                clearInterval(timerInterval);
-                isTimerRunning = false;
-                goToStep(4);
-            } else {
-                const nextPhase = activeBrew.phases[activeBrew.currentPhaseIdx];
-                activeSeg.setAttribute('stroke', nextPhase.color);
-                activeSeg.setAttribute('stroke-dasharray', `0 ${circumference}`);
-                updateTimerUI();
+                let accumulated = 0;
+                for (let i = 0; i <= activeBrew.currentPhaseIdx; i++) {
+                    accumulated += activeBrew.phases[i].duration;
+                }
+                if (accumulated > totalTimerSeconds) {
+                    totalTimerSeconds = accumulated;
+                    updateTimerUI();
+                }
             }
         }
 
@@ -1134,7 +1213,6 @@
             switchTab('dashboard');
         }
 
-        // Delete workflow with custom confirmation popup
         function promptDeleteBrew(id) {
             brewIdPendingDelete = id;
             document.getElementById('modal-confirm-delete').classList.add('active');
@@ -1163,6 +1241,7 @@
             const container = document.getElementById('bean-stats-container');
             if (db.brews.length === 0) {
                 container.innerHTML = `<p style="color: var(--text-muted); font-size: 0.9rem;">No data recorded yet.</p>`;
+                rankedBeansCache = [];
                 return;
             }
 
@@ -1172,10 +1251,18 @@
                 groups[b.beanName].push(b);
             });
 
-            let html = '';
-            for (let beanName in groups) {
+            rankedBeansCache = Object.keys(groups).map(beanName => {
                 const brews = groups[beanName];
                 const avgRank = brews.reduce((sum, c) => sum + c.rank, 0) / brews.length;
+                return { beanName, brews, avgRank };
+            });
+
+            rankedBeansCache.sort((a, b) => b.avgRank - a.avgRank);
+
+            let html = '';
+            rankedBeansCache.forEach((item, index) => {
+                const { beanName, brews, avgRank } = item;
+                const safeId = 'bean-box-' + index;
                 
                 let bitterCount = 0;
                 let sourCount = 0;
@@ -1190,26 +1277,82 @@
 
                 let advice = `Average Rating: <strong>${avgRank.toFixed(1)}/10</strong> across ${brews.length} logged cup(s).<br><br>`;
                 if (bitterCount > sourCount) {
-                    advice += `⚠️ <strong>Over-Extraction Detected:</strong> Multiple tasting notes mentioned bitterness or harshness. Try <strong>increasing your grind coarseness</strong> (e.g., moving past your current setting of ${recentGrind}) or <strong>lowering your water temperature</strong> below ${recentTemp}°C to reduce harsh extraction.`;
+                    advice += `⚠️ <strong>Over-Extraction Detected:</strong> Multiple tasting notes mentioned bitterness. Try <strong>grinding coarser</strong> than ${recentGrind} or <strong>lowering water temp</strong> below ${recentTemp}°C.`;
                 } else if (sourCount > bitterCount) {
-                    advice += `⚠️ <strong>Under-Extraction Detected:</strong> Multiple tasting notes reported sourness or excessive acidity. Try <strong>grinding finer</strong> than ${recentGrind} or <strong>increasing water temperature</strong> above ${recentTemp}°C to extract more sweetness.`;
+                    advice += `⚠️ <strong>Under-Extraction Detected:</strong> Multiple tasting notes reported sourness. Try <strong>grinding finer</strong> than ${recentGrind} or <strong>increasing water temp</strong> above ${recentTemp}°C.`;
                 } else {
-                    advice += `✨ <strong>Balanced Profile:</strong> Your extractions show good equilibrium. Maintain your current grind setting around <strong>${recentGrind}</strong> and water temperature at <strong>${recentTemp}°C</strong>, focusing on consistent pour timing.`;
+                    advice += `✨ <strong>Balanced Profile:</strong> Extractions show good equilibrium. Maintain grind around <strong>${recentGrind}</strong> and water temp at <strong>${recentTemp}°C</strong>.`;
                 }
 
                 html += `
-                    <div class="optimizer-box">
+                    <div class="optimizer-box" id="${safeId}">
                         <div class="optimizer-top-row">
                             <div class="optimizer-title">${beanName}</div>
+                            <div class="optimizer-rank-badge">#${index + 1} • ${avgRank.toFixed(1)}/10</div>
                         </div>
-                        <div class="optimizer-text" style="margin-top: 0.5rem;">${advice}</div>
+                        <div class="optimizer-text">${advice}</div>
                     </div>
                 `;
-            }
+            });
             container.innerHTML = html;
         }
 
-        // Modals
+        function handleSearchInput() {
+            const query = document.getElementById('analytics-search-input').value.toLowerCase().trim();
+            const dropdown = document.getElementById('search-suggestions-dropdown');
+
+            if (!query || rankedBeansCache.length === 0) {
+                dropdown.classList.remove('active');
+                dropdown.innerHTML = '';
+                return;
+            }
+
+            const matches = rankedBeansCache.filter(item => item.beanName.toLowerCase().includes(query));
+
+            if (matches.length === 0) {
+                dropdown.innerHTML = `<div class="suggestion-item" style="color: var(--text-muted); cursor: default;">No matching beans or roasters found</div>`;
+                dropdown.classList.add('active');
+                return;
+            }
+
+            let html = '';
+            matches.forEach(item => {
+                const originalIndex = rankedBeansCache.findIndex(r => r.beanName === item.beanName);
+                html += `
+                    <div class="suggestion-item" onclick="jumpToBean(${originalIndex}, '${item.beanName.replace(/'/g, "\\'")}')">
+                        <span>${item.beanName}</span>
+                        <span class="suggestion-item-score">#${originalIndex + 1} • ${item.avgRank.toFixed(1)}/10</span>
+                    </div>
+                `;
+            });
+
+            dropdown.innerHTML = html;
+            dropdown.classList.add('active');
+        }
+
+        function jumpToBean(index, beanName) {
+            document.getElementById('analytics-search-input').value = beanName;
+            document.getElementById('search-suggestions-dropdown').classList.remove('active');
+
+            const targetBox = document.getElementById('bean-box-' + index);
+            if (targetBox) {
+                targetBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                targetBox.classList.add('highlighted');
+                setTimeout(() => {
+                    targetBox.classList.remove('highlighted');
+                }, 2000);
+            }
+        }
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function(e) {
+            const searchContainer = document.querySelector('.search-dropdown-container');
+            if (searchContainer && !searchContainer.contains(e.target)) {
+                const dropdown = document.getElementById('search-suggestions-dropdown');
+                if (dropdown) dropdown.classList.remove('active');
+            }
+        });
+
         function openProfileModal() {
             const modal = document.getElementById('modal-profile');
             const body = document.getElementById('profile-modal-body');
@@ -1220,7 +1363,7 @@
                 const regionCounts = {};
                 db.brews.forEach(b => {
                     const region = b.beanName.split(' ')[0] || 'Unknown';
-                    regionCounts[region] = (regionCounts[region] || 0) + 1;
+                    regionCounts[region] = (regionCounts[region] & 0 || 0) + 1;
                 });
                 let topRegion = Object.keys(regionCounts).reduce((a, b) => regionCounts[a] > regionCounts[b] ? a : b);
 
