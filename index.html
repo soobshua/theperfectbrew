@@ -215,6 +215,7 @@
 
         /* Grouped History Cards */
         .grouped-history-card {
+            position: relative;
             background: #fff;
             border: 1px solid var(--border-color);
             border-radius: 10px;
@@ -223,10 +224,24 @@
             font-size: 0.85rem;
         }
 
+        .history-score-badge {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            background: #faf8f5;
+            border: 1px solid var(--border-color);
+            padding: 6px 10px;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--accent);
+        }
+
         .grouped-history-card h3 {
             font-size: 1rem;
             color: var(--accent);
-            margin-bottom: 2px;
+            margin-bottom: 4px;
+            padding-right: 60px;
         }
 
         .history-section-divider {
@@ -832,11 +847,18 @@
             grouped[profileKey].sessions.push(s);
         });
 
+        // Calculate average score for each group and sort descending (highest ranked first)
+        const sortedGroups = Object.values(grouped).map(group => {
+            const totalCups = group.sessions.length;
+            const avgScore = parseFloat((group.sessions.reduce((acc, curr) => acc + curr.score, 0) / totalCups).toFixed(1));
+            return { ...group, avgScore };
+        }).sort((a, b) => b.avgScore - a.avgScore);
+
         let html = '';
-        for (const [key, group] of Object.entries(grouped)) {
+        sortedGroups.forEach(group => {
             const sessions = group.sessions;
             const totalCups = sessions.length;
-            const avgScore = (sessions.reduce((acc, curr) => acc + curr.score, 0) / totalCups).toFixed(1);
+            const avgScore = group.avgScore;
             const bestCup = sessions.reduce((best, curr) => curr.score > best.score ? curr : best, sessions[0]);
             
             let suggestion = "Maintain these parameters for consistent flavor extraction.";
@@ -850,10 +872,10 @@
 
             html += `
                 <div class="grouped-history-card">
+                    <div class="history-score-badge">${avgScore}</div>
                     <h3>${headerTitle}</h3>
-                    <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 8px;">Avg Rank: ${avgScore} / 10</div>
                     
-                    <div class="history-section-divider" style="border-top: none; margin-top: 0; padding-top: 4px;">
+                    <div class="history-section-divider" style="border-top: none; margin-top: 6px; padding-top: 4px;">
                         <strong>No. of Cups:</strong> ${totalCups}<br>
                         <strong>⭐ Best Cup Stats:</strong> Score: ${bestCup.score}/10 | Grind: ${bestCup.grind} clicks | Temp: ${bestCup.temp}°C<br>
                         <span style="color: var(--text-muted);">Notes: ${bestCup.notes || 'None recorded'} (${bestCup.date})</span>
@@ -865,7 +887,7 @@
                     </div>
                 </div>
             `;
-        }
+        });
         container.innerHTML = html;
     }
 
