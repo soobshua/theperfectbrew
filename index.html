@@ -587,7 +587,7 @@
             color: var(--text-main);
         }
 
-        /* Stats & Optimizer View with Search Dropdown */
+        /* Stats & Analytics View with Search Dropdown */
         .search-dropdown-container {
             position: relative;
             margin-bottom: 1.25rem;
@@ -667,7 +667,14 @@
             flex-direction: column;
             gap: 0.5rem;
             margin-bottom: 1rem;
+            cursor: pointer;
             transition: var(--transition);
+        }
+
+        .optimizer-box:hover {
+            border-color: var(--accent-beige);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 16px rgba(0,0,0,0.03);
         }
 
         .optimizer-box.highlighted {
@@ -744,13 +751,13 @@
 
             <div class="action-card" onclick="switchTab('log')">
                 <h3>+ Log New Cup</h3>
+                <p>Record your parameters, timer, and tasting notes</p>
             </div>
         </section>
 
         <!-- NEW CUP LOG VIEW -->
         <section id="view-log" class="view">
             <div class="card">
-                <h2 style="font-size: 1.2rem; margin-bottom: 1rem;" id="log-form-title">Log New Brew</h2>
                 
                 <!-- Step 1: Bean Selection -->
                 <div id="step-beans" class="step-container">
@@ -763,7 +770,7 @@
 
                     <div id="new-bean-fields" style="display: flex; flex-direction: column; gap: 1rem;">
                         <div class="form-group">
-                            <label>Bean Name & Roaster</label>
+                            <label>Bean Name & Roaster / Cafe</label>
                             <input type="text" id="bean-name" placeholder="e.g. Ethiopia Yirgacheffe (Roastery X)">
                         </div>
                         <div class="row">
@@ -881,7 +888,7 @@
         <!-- ANALYTICS VIEW -->
         <section id="view-stats" class="view">
             <div class="card">
-                <h2 style="font-size: 1.2rem; margin-bottom: 1rem;">Bean Rankings & Optimization</h2>
+                <h2 style="font-size: 1.2rem; margin-bottom: 1rem;">Bean Rankings</h2>
                 
                 <!-- Search & Jump Dropdown Bar -->
                 <div class="search-dropdown-container">
@@ -916,6 +923,17 @@
             </div>
             <div class="calendar-grid" id="calendar-grid-container"></div>
             <div id="calendar-day-cards" style="margin-top: 1rem; display: flex; flex-direction: column; gap: 0.75rem;"></div>
+        </div>
+    </div>
+
+    <!-- MODAL: Bean Details & Highest Ranked Metrics Popup -->
+    <div class="modal-backdrop" id="modal-bean-details">
+        <div class="modal-content">
+            <button class="modal-close" onclick="closeModals()">×</button>
+            <h2 style="font-size: 1.25rem;" id="bean-modal-title">Bean Details</h2>
+            <div id="bean-modal-body" style="display: flex; flex-direction: column; gap: 1rem; font-size: 0.95rem; line-height: 1.5;">
+                <!-- Populated dynamically -->
+            </div>
         </div>
     </div>
 
@@ -1284,7 +1302,7 @@
                 }
 
                 html += `
-                    <div class="optimizer-box" id="${safeId}">
+                    <div class="optimizer-box" id="${safeId}" onclick="openBeanDetailsModal(${index})">
                         <div class="optimizer-top-row">
                             <div class="optimizer-title">${beanName}</div>
                             <div class="optimizer-rank-badge">#${index + 1} • ${avgRank.toFixed(1)}/10</div>
@@ -1294,6 +1312,45 @@
                 `;
             });
             container.innerHTML = html;
+        }
+
+        function openBeanDetailsModal(index) {
+            const item = rankedBeansCache[index];
+            if (!item) return;
+
+            const modal = document.getElementById('modal-bean-details');
+            document.getElementById('bean-modal-title').textContent = item.beanName;
+
+            // Find highest ranked cup(s)
+            let highestRank = -1;
+            item.brews.forEach(b => {
+                if (b.rank > highestRank) highestRank = b.rank;
+            });
+            const bestBrews = item.brews.filter(b => b.rank === highestRank);
+            const bestBrew = bestBrews[0]; // Take top matching
+
+            const roastVal = bestBrew.roast || 'Medium';
+            const flavorVal = bestBrew.flavor || 'None specified';
+
+            const body = document.getElementById('bean-modal-body');
+            body.innerHTML = `
+                <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                    <div><strong>Roast Level:</strong> ${roastVal}</div>
+                    <div><strong>Flavor Notes / Profile:</strong> ${flavorVal}</div>
+                    <hr style="border: none; border-top: 1px solid var(--border-color); margin: 0.25rem 0;">
+                    <div><strong>⭐ Highest Ranked Cup Metrics (${bestBrew.rank}/10):</strong></div>
+                    <div style="background: var(--bg-color); padding: 0.85rem; border-radius: 8px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.5rem; font-size: 0.85rem;">
+                        <div>Grind Size: <strong>${bestBrew.grind} clicks</strong></div>
+                        <div>Water Temp: <strong>${bestBrew.temp}°C</strong></div>
+                        <div>Coffee: <strong>${bestBrew.coffee}g</strong></div>
+                        <div>Water: <strong>${bestBrew.water}g</strong></div>
+                        <div>Brew Time: <strong>${Math.floor(bestBrew.totalTime / 60)}m ${bestBrew.totalTime % 60}s</strong></div>
+                        <div>Date Logged: <strong>${bestBrew.date}</strong></div>
+                    </div>
+                    ${bestBrew.notes ? `<div style="font-size: 0.85rem; font-style: italic; color: var(--text-muted);">"${bestBrew.notes}"</div>` : ''}
+                </div>
+            `;
+            modal.classList.add('active');
         }
 
         function handleSearchInput() {
