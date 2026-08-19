@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Precision Pour-Over Tracker</title>
+    <title>Precision Pour-Over Master Tracker</title>
     <style>
         :root {
             --bg-color: #f7f5f0;
@@ -44,12 +44,37 @@
             margin-bottom: 40px;
         }
 
+        /* Navigation Header */
+        .app-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 12px;
+        }
+
         h1 {
-            font-size: 1.3rem;
+            font-size: 1.2rem;
             font-weight: 600;
-            margin-bottom: 4px;
             color: var(--accent);
-            text-align: center;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 12px;
+            font-size: 0.85rem;
+        }
+
+        .nav-links a {
+            text-decoration: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-weight: 500;
+        }
+
+        .nav-links a:hover, .nav-links a.active {
+            color: var(--accent);
         }
 
         .subtitle {
@@ -184,7 +209,7 @@
             transition: width 0.3s ease;
         }
 
-        /* Suggestions & History List */
+        /* Suggestion & Inventory Cards */
         .suggestion-card {
             background: #fff8f0;
             border-left: 4px solid var(--accent);
@@ -195,32 +220,86 @@
             line-height: 1.4;
         }
 
-        .history-item {
-            padding: 12px;
+        .item-card {
+            padding: 14px;
             border: 1px solid var(--border-color);
             border-radius: 8px;
             margin-bottom: 10px;
             font-size: 0.85rem;
+            background: #fff;
         }
 
-        .history-item strong {
+        .item-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px;
+        }
+
+        .item-card-header strong {
             color: var(--accent);
+            font-size: 0.95rem;
+        }
+
+        .badge {
+            font-size: 0.7rem;
+            background: #faf8f5;
+            border: 1px solid var(--border-color);
+            padding: 2px 6px;
+            border-radius: 4px;
+            color: var(--text-muted);
+        }
+
+        .card-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .card-actions button {
+            margin-top: 0;
+            padding: 6px 10px;
+            font-size: 0.8rem;
+            background: transparent;
+            color: var(--accent);
+            border: 1px solid var(--accent);
+        }
+
+        .card-actions button:hover {
+            background: var(--accent);
+            color: white;
+        }
+
+        .card-actions button.danger {
+            color: #b22222;
+            border-color: #b22222;
+        }
+
+        .card-actions button.danger:hover {
+            background: #b22222;
+            color: white;
         }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h1>Precision Pour-Over</h1>
+    <div class="app-header">
+        <h1 id="main-title">Precision Pour-Over</h1>
+        <div class="nav-links">
+            <a id="nav-brew" onclick="goToStep(1)" class="active">Brew</a>
+            <a id="nav-beans" onclick="renderBeanManager(); goToStep(5);">Beans</a>
+            <a id="nav-history" onclick="renderHistoryList(); goToStep(4);">History</a>
+        </div>
+    </div>
     <div class="subtitle" id="top-subtitle">Log, Time, and Refine Your Brews</div>
 
-    <!-- STEP 1: PARAMETERS -->
+    <!-- STEP 1: BREW PARAMETERS -->
     <div id="step-1" class="step-panel active">
         <div class="form-group">
             <label>Bean Selection</label>
-            <select id="bean-select" onchange="toggleNewBeanInputs()">
-                <option value="0">Ethiopian Worka (Natural Light)</option>
-                <option value="1">Colombia El Paraiso (Anaerobic)</option>
+            <select id="bean-select" onchange="checkBeanSelect()">
+                <option value="" disabled selected>-- Select a Bean Profile --</option>
                 <option value="new">+ Add New Bean Profile</option>
             </select>
         </div>
@@ -282,10 +361,10 @@
             </div>
         </div>
 
-        <button onclick="startTimerSetup()">Proceed to Stopwatch</button>
+        <button onclick="startTimerSetup()" id="proceed-brew-btn">Proceed to Stopwatch</button>
     </div>
 
-    <!-- STEP 2: STOPWATCH -->
+    <!-- STEP 2: MANUAL CHECKPOINT STOPWATCH -->
     <div id="step-2" class="step-panel">
         <div class="timer-display-box">
             <div id="timer-clock">0:00</div>
@@ -312,7 +391,7 @@
         <h2 style="font-size: 1.05rem; margin-bottom: 12px; color: var(--accent);">Brew Complete Analysis</h2>
         
         <div id="analytics-suggestions-box">
-            <!-- Dynamic data recommendations injected here -->
+            <!-- Dynamic optimization insights injected here -->
         </div>
 
         <div class="form-group">
@@ -334,17 +413,48 @@
         <div id="history-list-container">
             <!-- Past sessions rendered here -->
         </div>
-        <button onclick="resetToNewBrew()">Brew Another Cup</button>
+        <button onclick="goToStep(1)">Brew Another Cup</button>
+    </div>
+
+    <!-- STEP 5: BEAN MANAGER ORGANIZER -->
+    <div id="step-5" class="step-panel">
+        <h2 style="font-size: 1.05rem; margin-bottom: 12px; color: var(--accent);">Bean Inventory Manager</h2>
+        
+        <div style="background: #faf8f5; padding: 12px; border-radius: 8px; margin-bottom: 16px; border: 1px solid var(--border-color);">
+            <div class="form-group" style="margin-bottom: 10px;">
+                <label id="bean-form-title">Add New Bean Inventory</label>
+                <input type="text" id="mgr-name" placeholder="Bean Name / Origin">
+            </div>
+            <div class="row" style="margin-bottom: 10px;">
+                <div class="form-group" style="margin-bottom:0;">
+                    <label>Roast Level</label>
+                    <select id="mgr-roast">
+                        <option value="Light">Light</option>
+                        <option value="Medium-Light">Medium-Light</option>
+                        <option value="Medium">Medium</option>
+                    </select>
+                </div>
+                <div class="form-group" style="margin-bottom:0;">
+                    <label>Flavor Notes</label>
+                    <input type="text" id="mgr-flavor" placeholder="e.g. Floral, Citrus">
+                </div>
+            </div>
+            <input type="hidden" id="mgr-edit-index" value="-1">
+            <button onclick="saveBeanFromManager()" id="mgr-save-btn" style="margin-top: 10px;">Save Bean Profile</button>
+            <button id="mgr-cancel-btn" onclick="resetBeanManagerForm()" style="display:none; background: transparent; color: var(--text-muted); border: 1px solid var(--border-color); margin-top: 6px;">Cancel Edit</button>
+        </div>
+
+        <div id="bean-manager-list">
+            <!-- Active & archived bean cards rendered here -->
+        </div>
+        <button onclick="goToStep(1)" style="margin-top: 16px;">Back to Brew Setup</button>
     </div>
 </div>
 
 <script>
-    // Application State Database & Active Records
+    // Master Database
     const db = {
-        beans: [
-            { name: "Ethiopian Worka", roast: "Light", flavor: "Bergamot, Jasmine" },
-            { name: "Colombia El Paraiso", roast: "Light", flavor: "Lychee, Peach" }
-        ],
+        beans: [],
         sessions: []
     };
 
@@ -356,43 +466,174 @@
     let stopwatchInterval = null;
     let isStopwatchRunning = false;
 
-    // Distinct soft palette colors for multi-colored visual distribution bar
     const phaseColors = ['#8b5a2b', '#c29b61', '#d4b58a', '#e8d5b5', '#6f4520', '#a37042', '#b88654'];
 
-    function toggleNewBeanInputs() {
-        const val = document.getElementById('bean-select').value;
-        document.getElementById('new-bean-section').style.display = (val === 'new') ? 'block' : 'none';
-    }
-
+    // Navigation and Panel Control
     function goToStep(stepNum) {
         document.querySelectorAll('.step-panel').forEach(p => p.classList.remove('active'));
         document.getElementById(`step-${stepNum}`).classList.add('active');
+
+        // Update nav highlights
+        document.querySelectorAll('.nav-links a').forEach(a => a.classList.remove('active'));
+        if (stepNum === 1 || stepNum === 2 || stepNum === 3) document.getElementById('nav-brew').classList.add('active');
+        if (stepNum === 4) document.getElementById('nav-history').classList.add('active');
+        if (stepNum === 5) document.getElementById('nav-beans').classList.add('active');
 
         const subtitles = {
             1: "Log, Time, and Refine Your Brews",
             2: "Manual Checkpoint Stopwatch Mode",
             3: "Performance Insights & Cup Scoring",
-            4: "Archived Logs & Optimization Progress"
+            4: "Archived Logs & Optimization Progress",
+            5: "Organize, Edit, and Archive Your Bean Stash"
         };
         document.getElementById('top-subtitle').textContent = subtitles[stepNum];
 
+        if (stepNum === 1) {
+            updateBeanSelectDropdown();
+        }
         if (stepNum === 2) {
             initStopwatchSession();
         }
     }
 
+    // Bean Dropdown Management in Brew Panel
+    function updateBeanSelectDropdown(selectedName = "") {
+        const select = document.getElementById('bean-select');
+        select.innerHTML = '<option value="" disabled selected>-- Select a Bean Profile --</option>';
+
+        const activeBeans = db.beans.filter(b => !b.archived);
+        activeBeans.forEach((b, idx) => {
+            const opt = document.createElement('option');
+            opt.value = idx;
+            opt.textContent = `${b.name} (${b.roast} - ${b.flavor})`;
+            if (b.name === selectedName) opt.selected = true;
+            select.appendChild(opt);
+        });
+
+        const newOpt = document.createElement('option');
+        newOpt.value = 'new';
+        newOpt.textContent = '+ Add New Bean Profile';
+        select.appendChild(newOpt);
+
+        checkBeanSelect();
+    }
+
+    function checkBeanSelect() {
+        const val = document.getElementById('bean-select').value;
+        const newSec = document.getElementById('new-bean-section');
+        const btn = document.getElementById('proceed-brew-btn');
+
+        if (val === 'new') {
+            newSec.style.display = 'block';
+            btn.disabled = false;
+        } else if (val === '') {
+            newSec.style.display = 'none';
+            btn.disabled = true;
+        } else {
+            newSec.style.display = 'none';
+            btn.disabled = false;
+        }
+    }
+
     function startTimerSetup() {
+        const val = document.getElementById('bean-select').value;
+        if (val === '') return;
         goToStep(2);
     }
 
+    // Bean Inventory Manager Functions (Step 5)
+    function renderBeanManager() {
+        const container = document.getElementById('bean-manager-list');
+        if (db.beans.length === 0) {
+            container.innerHTML = '<p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom:16px;">No beans added yet. Use the form above to add your first bag.</p>';
+            return;
+        }
+
+        let html = '';
+        db.beans.forEach((b, idx) => {
+            html += `
+                <div class="item-card" style="${b.archived ? 'opacity: 0.6; background: #faf8f5;' : ''}">
+                    <div class="item-card-header">
+                        <strong>${b.name}</strong>
+                        <span class="badge">${b.roast} ${b.archived ? '(Archived)' : ''}</span>
+                    </div>
+                    <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 6px;">
+                        Notes: ${b.flavor || 'None specified'}
+                    </div>
+                    <div class="card-actions">
+                        <button onclick="editBean(${idx})">Edit</button>
+                        <button onclick="toggleArchiveBean(${idx})" class="danger">${b.archived ? 'Unarchive' : 'Archive'}</button>
+                    </div>
+                </div>
+            `;
+        });
+        container.innerHTML = html;
+    }
+
+    function saveBeanFromManager() {
+        const name = document.getElementById('mgr-name').value.trim();
+        const roast = document.getElementById('mgr-roast').value;
+        const flavor = document.getElementById('mgr-flavor').value.trim();
+        const editIdx = parseInt(document.getElementById('mgr-edit-index').value);
+
+        if (!name) {
+            alert('Please enter a bean name.');
+            return;
+        }
+
+        if (editIdx === -1) {
+            db.beans.push({ name, roast, flavor, archived: false });
+        } else {
+            db.beans[editIdx].name = name;
+            db.beans[editIdx].roast = roast;
+            db.beans[editIdx].flavor = flavor;
+        }
+
+        resetBeanManagerForm();
+        renderBeanManager();
+    }
+
+    function editBean(idx) {
+        const b = db.beans[idx];
+        document.getElementById('mgr-name').value = b.name;
+        document.getElementById('mgr-roast').value = b.roast;
+        document.getElementById('mgr-flavor').value = b.flavor || '';
+        document.getElementById('mgr-edit-index').value = idx;
+        document.getElementById('bean-form-title').textContent = 'Edit Bean Profile';
+        document.getElementById('mgr-save-btn').textContent = 'Update Bean Profile';
+        document.getElementById('mgr-cancel-btn').style.display = 'block';
+    }
+
+    function resetBeanManagerForm() {
+        document.getElementById('mgr-name').value = '';
+        document.getElementById('mgr-flavor').value = '';
+        document.getElementById('mgr-edit-index').value = -1;
+        document.getElementById('bean-form-title').textContent = 'Add New Bean Inventory';
+        document.getElementById('mgr-save-btn').textContent = 'Save Bean Profile';
+        document.getElementById('mgr-cancel-btn').style.display = 'none';
+    }
+
+    function toggleArchiveBean(idx) {
+        db.beans[idx].archived = !db.beans[idx].archived;
+        renderBeanManager();
+    }
+
+    // Manual Checkpoint Stopwatch Logic
     function initStopwatchSession() {
         const beanVal = document.getElementById('bean-select').value;
         if (beanVal === 'new') {
-            activeBrew.beanName = document.getElementById('bean-name').value.trim() || 'Custom Bean';
-            activeBrew.roast = document.getElementById('bean-roast').value;
-            activeBrew.flavor = document.getElementById('bean-flavor').value.trim();
+            const name = document.getElementById('bean-name').value.trim() || 'Custom Bean';
+            const roast = document.getElementById('bean-roast').value;
+            const flavor = document.getElementById('bean-flavor').value.trim();
+            
+            // Save newly created bean directly to inventory
+            db.beans.push({ name, roast, flavor, archived: false });
+            activeBrew.beanName = name;
+            activeBrew.roast = roast;
+            activeBrew.flavor = flavor;
         } else {
-            const b = db.beans[beanVal] || db.beans[0];
+            const activeBeansList = db.beans.filter(b => !b.archived);
+            const b = activeBeansList[beanVal];
             activeBrew.beanName = b.name;
             activeBrew.roast = b.roast;
             activeBrew.flavor = b.flavor;
@@ -405,7 +646,7 @@
         activeBrew.bloom = document.getElementById('param-bloom').value;
         activeBrew.pours = parseInt(document.getElementById('param-pours').value) || 3;
 
-        // Construct precise sequential array of alternating pours and pauses
+        // Build sequential phases array
         brewPhases = [];
         let colorIdx = 0;
 
@@ -442,7 +683,6 @@
 
     function handlePourOrFinishPress() {
         if (!isStopwatchRunning) {
-            // Activation click #1: Starts background global clock and first phase
             isStopwatchRunning = true;
             if (stopwatchInterval) clearInterval(stopwatchInterval);
             
@@ -466,7 +706,6 @@
             return;
         }
 
-        // Subsequent checkpoint clicks: Freeze current stage duration and advance pointer
         if (currentPhaseIndex < brewPhases.length) {
             brewPhases[currentPhaseIndex - 1].duration = currentPhaseSeconds;
             currentPhaseSeconds = 0;
@@ -481,7 +720,6 @@
                 document.getElementById('timer-action-btn').textContent = `Complete Brew`;
             }
         } else {
-            // Conclude timer session
             if (stopwatchInterval) clearInterval(stopwatchInterval);
             isStopwatchRunning = false;
             brewPhases[brewPhases.length - 1].duration = currentPhaseSeconds;
@@ -523,14 +761,12 @@
         container.innerHTML = html;
     }
 
+    // Analytics & Improvement Suggestions Engine
     function generateAnalyticsSuggestions() {
         let suggestionsHTML = '';
         
-        // Isolate specific stages for suggestion analysis
         const bloomPhase = brewPhases.find(p => p.name === 'Bloom');
         const bloomDur = bloomPhase ? bloomPhase.duration : 0;
-        const firstPour = brewPhases.find(p => p.name === 'Pour 1');
-        const firstPourDur = firstPour ? firstPour.duration : 0;
         const drawdownPhase = brewPhases.find(p => p.name === 'Final Drawdown');
         const drawdownDur = drawdownPhase ? drawdownPhase.duration : 0;
 
@@ -553,6 +789,7 @@
         document.getElementById('analytics-suggestions-box').innerHTML = suggestionsHTML;
     }
 
+    // Saving & History Archiving
     function saveBrewSession() {
         activeBrew.score = document.getElementById('cup-score').value;
         activeBrew.notes = document.getElementById('cup-notes').value;
@@ -575,7 +812,7 @@
         let html = '';
         db.sessions.forEach(s => {
             html += `
-                <div class="history-item">
+                <div class="item-card">
                     <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
                         <strong>${s.beanName}</strong>
                         <span>Score: <strong>${s.score}/10</strong></span>
@@ -590,9 +827,8 @@
         container.innerHTML = html;
     }
 
-    function resetToNewBrew() {
-        goToStep(1);
-    }
+    // Initialize dropdown on load
+    updateBeanSelectDropdown();
 </script>
 
 </body>
