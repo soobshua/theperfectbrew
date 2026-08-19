@@ -209,7 +209,7 @@
             transition: width 0.3s ease;
         }
 
-        /* Cards & Grouping */
+        /* Suggestion Card */
         .suggestion-card {
             background: #fff8f0;
             border-left: 4px solid var(--accent);
@@ -220,6 +220,60 @@
             line-height: 1.4;
         }
 
+        /* Grouped History Cards */
+        .grouped-history-card {
+            position: relative;
+            background: #fff;
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 16px;
+            margin-bottom: 14px;
+            font-size: 0.85rem;
+        }
+
+        .history-avg-badge {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            background: #faf8f5;
+            border: 1px solid var(--border-color);
+            padding: 6px 10px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .history-avg-badge .score-val {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--accent);
+            display: block;
+        }
+
+        .history-avg-badge .score-label {
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+        }
+
+        .grouped-history-card h3 {
+            font-size: 1rem;
+            color: var(--accent);
+            margin-bottom: 4px;
+            padding-right: 70px;
+        }
+
+        .history-meta-sub {
+            color: var(--text-muted);
+            margin-bottom: 10px;
+            font-size: 0.8rem;
+        }
+
+        .history-section-divider {
+            border-top: 1px dashed var(--border-color);
+            margin: 10px 0;
+            padding-top: 8px;
+        }
+
         .item-card {
             padding: 14px;
             border: 1px solid var(--border-color);
@@ -227,6 +281,17 @@
             margin-bottom: 10px;
             font-size: 0.85rem;
             background: #fff;
+            transition: opacity 0.2s, background 0.2s;
+        }
+
+        .item-card.archived {
+            background: #f0ede6;
+            opacity: 0.65;
+        }
+
+        .item-card.archived .item-card-header strong,
+        .item-card.archived .badge {
+            color: var(--text-muted);
         }
 
         .item-card-header {
@@ -271,22 +336,13 @@
         }
 
         .card-actions button.danger {
-            color: #b22222;
-            border-color: #b22222;
+            color: #7d6b5e;
+            border-color: #bfaea2;
         }
 
         .card-actions button.danger:hover {
-            background: #b22222;
+            background: #7d6b5e;
             color: white;
-        }
-
-        .group-header {
-            font-size: 0.95rem;
-            font-weight: 600;
-            color: var(--accent);
-            margin: 18px 0 8px 0;
-            padding-bottom: 4px;
-            border-bottom: 1px dashed var(--border-color);
         }
 
         /* Taster Profile Dashboard Stats */
@@ -341,8 +397,18 @@
 
         <div id="new-bean-section" style="display: none; background: #faf8f5; padding: 12px; border-radius: 8px; margin-bottom: 16px; border: 1px solid var(--border-color);">
             <div class="form-group">
-                <label>Bean Name (e.g. Ethiopia (Yirgacheffe))</label>
-                <input type="text" id="bean-name" placeholder="e.g. Ethiopia (Yirgacheffe)">
+                <label>Bean Name (e.g. Yirgacheffe)</label>
+                <input type="text" id="bean-name" placeholder="e.g. Yirgacheffe">
+            </div>
+            <div class="row">
+                <div class="form-group">
+                    <label>Bean Origin</label>
+                    <input type="text" id="bean-origin" placeholder="e.g. Ethiopia">
+                </div>
+                <div class="form-group">
+                    <label>Roastery / Café (Optional)</label>
+                    <input type="text" id="bean-roastery" placeholder="e.g. Onyx Coffee Lab">
+                </div>
             </div>
             <div class="row">
                 <div class="form-group">
@@ -356,7 +422,7 @@
                     </select>
                 </div>
                 <div class="form-group">
-                    <label>Flavor Profile Tag</label>
+                    <label>Flavour Profile Tag</label>
                     <select id="bean-flavor-type">
                         <option value="Fruity">Fruity</option>
                         <option value="Nutty">Nutty</option>
@@ -442,7 +508,7 @@
         </div>
 
         <div class="form-group">
-            <label>Tasting Notes & Observations (comma separated)</label>
+            <label>Specific Tasting Notes (comma separated)</label>
             <textarea id="cup-notes" rows="3" placeholder="Peach, floral, clean finish..."></textarea>
         </div>
 
@@ -456,14 +522,24 @@
         <button onclick="attemptNav(1)">Back to Brew</button>
     </div>
 
-    <!-- STEP 5: BEAN MANAGER -->
+    <!-- STEP 5: BEAN INVENTORY -->
     <div id="step-5" class="step-panel">
-        <h2 style="font-size: 1.05rem; margin-bottom: 12px; color: var(--accent);">Bean Inventory Manager</h2>
+        <h2 style="font-size: 1.05rem; margin-bottom: 12px; color: var(--accent);">Bean Inventory</h2>
         
         <div style="background: #faf8f5; padding: 12px; border-radius: 8px; margin-bottom: 16px; border: 1px solid var(--border-color);">
             <div class="form-group" style="margin-bottom: 10px;">
                 <label id="bean-form-title">Add New Bean Inventory</label>
-                <input type="text" id="mgr-name" placeholder="Name (e.g. Ethiopia (Yirgacheffe))">
+                <input type="text" id="mgr-name" placeholder="Name (e.g. Yirgacheffe)">
+            </div>
+            <div class="row" style="margin-bottom: 10px;">
+                <div class="form-group" style="margin-bottom:0;">
+                    <label>Bean Origin</label>
+                    <input type="text" id="mgr-origin" placeholder="e.g. Ethiopia">
+                </div>
+                <div class="form-group" style="margin-bottom:0;">
+                    <label>Roastery / Café (Optional)</label>
+                    <input type="text" id="mgr-roastery" placeholder="e.g. Onyx">
+                </div>
             </div>
             <div class="row" style="margin-bottom: 10px;">
                 <div class="form-group" style="margin-bottom:0;">
@@ -477,7 +553,7 @@
                     </select>
                 </div>
                 <div class="form-group" style="margin-bottom:0;">
-                    <label>Flavor Profile Tag</label>
+                    <label>Flavour Profile Tag</label>
                     <select id="mgr-flavor-type">
                         <option value="Fruity">Fruity</option>
                         <option value="Nutty">Nutty</option>
@@ -525,39 +601,6 @@
     let isStopwatchRunning = false;
     let currentStep = 1;
 
-    const phaseColors = ['#8b5a2b', '#c29b61', '#d4b58a', '#e8d5b5', '#6f4520', '#a37042', '#b88654'];
-
-    const knownCountries = [
-        "ethiopia", "colombia", "columbia", "kenya", "guatemala", "costa rica", 
-        "panama", "brazil", "rwanda", "honduras", "peru", "sumatra", "yemen", 
-        "mexico", "burundi", "el salvador", "vietnam", "indonesia", "tanzania", "colombia"
-    ];
-
-    function getCountryFromBeanName(nameStr) {
-        if (!nameStr) return "Unknown Origin";
-        
-        // 1. Check inside parentheses first (e.g., "Elysian Coffee (Ethiopia)" or "Ethiopia (Yirgacheffe)")
-        const match = nameStr.match(/\(([^)]+)\)/);
-        if (match) {
-            const content = match[1].trim();
-            const lowerContent = content.toLowerCase();
-            for (let c of knownCountries) {
-                if (lowerContent.includes(c)) return c.charAt(0).toUpperCase() + c.slice(1);
-            }
-            // If the text inside parentheses isn't a known country match, use it if it looks like a location/region
-            if (content.length > 2) return content;
-        }
-        
-        // 2. Check whole string for any known country
-        const lowerName = nameStr.toLowerCase();
-        for (let c of knownCountries) {
-            if (lowerName.includes(c)) return c.charAt(0).toUpperCase() + c.slice(1);
-        }
-
-        // 3. Fallback: if no match found anywhere, return the string cleanly or Unknown Origin
-        return nameStr.split('(')[0].trim() || "Unknown Origin";
-    }
-
     window.addEventListener('beforeunload', (e) => {
         if (isStopwatchRunning || currentStep === 2) {
             e.preventDefault();
@@ -592,13 +635,13 @@
         if (stepNum === 6) renderTasterProfile();
     }
 
-    function updateBeanSelectDropdown(selectedName = "") {
+    function updateBeanSelectDropdown() {
         const select = document.getElementById('bean-select');
         select.innerHTML = '<option value="" disabled selected>-- Select a Bean Profile --</option>';
         db.beans.filter(b => !b.archived).forEach((b) => {
             const opt = document.createElement('option');
             opt.value = b.id;
-            opt.textContent = `${b.name} (${b.roast})`;
+            opt.textContent = `${b.name} (${b.origin || 'Unknown Origin'}) - ${b.roast}`;
             select.appendChild(opt);
         });
         select.innerHTML += '<option value="new">+ Add New Bean Profile</option>';
@@ -619,10 +662,17 @@
     function renderBeanManager() {
         const container = document.getElementById('bean-manager-list');
         container.innerHTML = db.beans.length === 0 ? '<p style="font-size: 0.85rem; color: var(--text-muted);">No beans added.</p>' : '';
-        db.beans.forEach((b) => {
+        
+        // Sort beans so archived ones are pushed to the bottom
+        const sortedBeans = [...db.beans].sort((a, b) => (a.archived === b.archived ? 0 : a.archived ? 1 : -1));
+
+        sortedBeans.forEach((b) => {
+            const roasteryText = b.roastery ? ` | ${b.roastery}` : '';
             container.innerHTML += `
-                <div class="item-card" style="${b.archived ? 'opacity:0.6' : ''}">
-                    <div class="item-card-header"><strong>${b.name}</strong><span class="badge">${b.roast}</span></div>
+                <div class="item-card ${b.archived ? 'archived' : ''}">
+                    <div class="item-card-header"><strong>${b.name}</strong><span class="badge">${b.roast} - ${b.flavorType || 'Fruity'}</span></div>
+                    <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">Origin: ${b.origin || 'Unknown'}${roasteryText}</div>
+                    <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">Notes: ${b.flavor || 'None'}</div>
                     <div class="card-actions">
                         <button onclick="editBean('${b.id}')">Edit</button>
                         <button onclick="toggleArchiveBean('${b.id}')" class="danger">${b.archived ? 'Unarchive' : 'Archive'}</button>
@@ -634,6 +684,8 @@
 
     function saveBeanFromManager() {
         const name = document.getElementById('mgr-name').value.trim();
+        const origin = document.getElementById('mgr-origin').value.trim();
+        const roastery = document.getElementById('mgr-roastery').value.trim();
         const roast = document.getElementById('mgr-roast').value;
         const flavorType = document.getElementById('mgr-flavor-type').value;
         const flavor = document.getElementById('mgr-flavor').value.trim();
@@ -641,10 +693,10 @@
 
         if (!name) return alert('Name required.');
         if (!editId) {
-            db.beans.push({ id: 'b_' + Date.now(), name, roast, flavorType, flavor, archived: false });
+            db.beans.push({ id: 'b_' + Date.now(), name, origin, roastery, roast, flavorType, flavor, archived: false });
         } else {
             const b = db.beans.find(x => x.id === editId);
-            Object.assign(b, { name, roast, flavorType, flavor });
+            Object.assign(b, { name, origin, roastery, roast, flavorType, flavor });
         }
         persistData();
         resetBeanManagerForm();
@@ -654,7 +706,11 @@
     function editBean(id) {
         const b = db.beans.find(x => x.id === id);
         document.getElementById('mgr-name').value = b.name;
+        document.getElementById('mgr-origin').value = b.origin || '';
+        document.getElementById('mgr-roastery').value = b.roastery || '';
         document.getElementById('mgr-roast').value = b.roast;
+        document.getElementById('mgr-flavor-type').value = b.flavorType || 'Fruity';
+        document.getElementById('mgr-flavor').value = b.flavor || '';
         document.getElementById('mgr-edit-id').value = id;
         document.getElementById('mgr-save-btn').textContent = 'Update';
         document.getElementById('mgr-cancel-btn').style.display = 'block';
@@ -662,6 +718,9 @@
 
     function resetBeanManagerForm() {
         document.getElementById('mgr-name').value = '';
+        document.getElementById('mgr-origin').value = '';
+        document.getElementById('mgr-roastery').value = '';
+        document.getElementById('mgr-flavor').value = '';
         document.getElementById('mgr-edit-id').value = '';
         document.getElementById('mgr-save-btn').textContent = 'Save Bean Profile';
         document.getElementById('mgr-cancel-btn').style.display = 'none';
@@ -676,13 +735,25 @@
 
     function initStopwatchSession() {
         const val = document.getElementById('bean-select').value;
+        let matchedBean = null;
         if (val === 'new') {
-            const name = document.getElementById('bean-name').value.trim() || 'Kenya Nyeri';
-            db.beans.push({ id: 'b_' + Date.now(), name, roast: document.getElementById('bean-roast').value, flavorType: document.getElementById('bean-flavor-type').value, flavor: document.getElementById('bean-flavor').value, archived: false });
-            activeBrew.beanName = name;
+            const name = document.getElementById('bean-name').value.trim() || 'Yirgacheffe';
+            const origin = document.getElementById('bean-origin').value.trim() || 'Ethiopia';
+            const roastery = document.getElementById('bean-roastery').value.trim();
+            const roast = document.getElementById('bean-roast').value;
+            const flavorType = document.getElementById('bean-flavor-type').value;
+            const flavor = document.getElementById('bean-flavor').value;
+            matchedBean = { id: 'b_' + Date.now(), name, origin, roastery, roast, flavorType, flavor, archived: false };
+            db.beans.push(matchedBean);
         } else {
-            activeBrew.beanName = db.beans.find(x => x.id === val).name;
+            matchedBean = db.beans.find(x => x.id === val);
         }
+        
+        activeBrew.beanName = matchedBean.name;
+        activeBrew.origin = matchedBean.origin || 'Unknown';
+        activeBrew.roastery = matchedBean.roastery || '';
+        activeBrew.roast = matchedBean.roast;
+        activeBrew.flavorType = matchedBean.flavorType || 'Fruity';
         activeBrew.grind = document.getElementById('param-grind').value;
         activeBrew.temp = document.getElementById('param-temp').value;
         activeBrew.coffee = document.getElementById('param-coffee').value;
@@ -714,12 +785,31 @@
         } else {
             clearInterval(stopwatchInterval);
             isStopwatchRunning = false;
+            generateSuggestions(activeBrew);
             goToStep(3);
         }
     }
 
+    function generateSuggestions(brew) {
+        let tip = "Your parameters look well balanced. Keep track of extraction time to ensure even drawdown.";
+        const score = parseFloat(brew.score) || 8;
+        const grind = parseInt(brew.grind);
+        const temp = parseInt(brew.temp);
+
+        if (score < 7) {
+            if (grind < 20) {
+                tip = "<strong>Optimization Tip:</strong> Cup score was low with a fine grind. Try coarser clicks (e.g. 23-25) to reduce over-extraction bitterness.";
+            } else {
+                tip = "<strong>Optimization Tip:</strong> Consider increasing water temperature by 1-2°C or grinding slightly finer to boost extraction yield.";
+            }
+        } else {
+            tip = `<strong>Great Brew!</strong> Your grind setting of ${grind} clicks and ${temp}°C water worked nicely. Replicate these parameters for consistency.`;
+        }
+        document.getElementById('analytics-suggestions-box').innerHTML = `<div class="suggestion-card">${tip}</div>`;
+    }
+
     function saveBrewSession() {
-        activeBrew.score = parseFloat(document.getElementById('cup-score').value);
+        activeBrew.score = parseFloat(document.getElementById('cup-score').value) || 8;
         activeBrew.notes = document.getElementById('cup-notes').value;
         activeBrew.date = new Date().toLocaleDateString();
         db.sessions.unshift(activeBrew);
@@ -729,39 +819,114 @@
 
     function renderHistoryList() {
         const container = document.getElementById('history-list-container');
-        container.innerHTML = db.sessions.map(s => `<div class="item-card"><strong>${s.beanName}</strong><br>Score: ${s.score}/10 | ${s.date}</div>`).join('');
+        if (db.sessions.length === 0) {
+            container.innerHTML = '<p style="font-size: 0.85rem; color: var(--text-muted);">No brew sessions logged yet.</p>';
+            return;
+        }
+
+        const grouped = {};
+        db.sessions.forEach(s => {
+            const profileKey = `${s.beanName}|${s.origin}|${s.roastery}|${s.roast}|${s.flavorType}`;
+            if (!grouped[profileKey]) {
+                grouped[profileKey] = {
+                    title: `${s.beanName} (${s.origin})${s.roastery ? ' - ' + s.roastery : ''}`,
+                    subtitle: `${s.roast} | ${s.flavorType || 'Fruity'}`,
+                    sessions: []
+                };
+            }
+            grouped[profileKey].sessions.push(s);
+        });
+
+        let html = '';
+        for (const [key, group] of Object.entries(grouped)) {
+            const sessions = group.sessions;
+            const totalCups = sessions.length;
+            const avgScore = (sessions.reduce((acc, curr) => acc + curr.score, 0) / totalCups).toFixed(1);
+            const bestCup = sessions.reduce((best, curr) => curr.score > best.score ? curr : best, sessions[0]);
+            
+            let suggestion = "Maintain these parameters for consistent flavor extraction.";
+            if (bestCup.score < 7.5) {
+                suggestion = "Consider adjusting grind size or water temperature to pull cleaner notes out of this bean profile.";
+            } else {
+                suggestion = `Best results achieved at grind setting ${bestCup.grind} clicks with ${bestCup.temp}°C water.`;
+            }
+
+            html += `
+                <div class="grouped-history-card">
+                    <div class="history-avg-badge">
+                        <span class="score-val">${avgScore}</span>
+                        <span class="score-label">Avg Rank</span>
+                    </div>
+                    <h3>${group.title}</h3>
+                    <div class="history-meta-sub">${group.subtitle} | Cups Brewed: <strong>${totalCups}</strong></div>
+                    
+                    <div class="history-section-divider">
+                        <strong>⭐ Best Cup Stats:</strong><br>
+                        Score: ${bestCup.score}/10 | Grind: ${bestCup.grind} clicks | Temp: ${bestCup.temp}°C<br>
+                        <span style="color: var(--text-muted);">Notes: ${bestCup.notes || 'None recorded'} (${bestCup.date})</span>
+                    </div>
+
+                    <div class="history-section-divider">
+                        <strong>💡 Suggestion for Better Brew:</strong><br>
+                        <span style="color: var(--text-muted);">${suggestion}</span>
+                    </div>
+                </div>
+            `;
+        }
+        container.innerHTML = html;
     }
 
     function renderTasterProfile() {
-        const noteCounts = {};
         const countryCounts = {};
-        const stopWords = new Set(["good", "light", "refreshing", "clean", "nice", "sweet", "bitter"]);
+        const roastComboCounts = {};
+        const noteCounts = {};
 
         db.sessions.forEach(s => {
-            const country = getCountryFromBeanName(s.beanName);
-            countryCounts[country] = (countryCounts[country] || 0) + 1;
+            if (s.origin) countryCounts[s.origin] = (countryCounts[s.origin] || 0) + 1;
 
-            (s.notes || '').split(',').forEach(n => {
-                const note = n.trim().toLowerCase();
-                if (note && !stopWords.has(note)) noteCounts[note] = (noteCounts[note] || 0) + 1;
-            });
+            if (s.roast && s.flavorType) {
+                const combo = `${s.roast} + ${s.flavorType}`;
+                roastComboCounts[combo] = (roastComboCounts[combo] || 0) + 1;
+            }
         });
 
-        const topCountry = Object.keys(countryCounts).length > 0 
+        db.beans.forEach(b => {
+            if (b.origin && !Object.keys(countryCounts).length) countryCounts[b.origin] = (countryCounts[b.origin] || 0) + 1;
+            if (b.roast && b.flavorType) {
+                const combo = `${b.roast} + ${b.flavorType}`;
+                roastComboCounts[combo] = (roastComboCounts[combo] || 0) + 1;
+            }
+            if (b.flavor) {
+                b.flavor.split(',').forEach(n => {
+                    const cleanNote = n.trim();
+                    if (cleanNote) noteCounts[cleanNote] = (noteCounts[cleanNote] || 0) + 1;
+                });
+            }
+        });
+
+        const favCountry = Object.keys(countryCounts).length > 0 
             ? Object.keys(countryCounts).reduce((a, b) => countryCounts[a] > countryCounts[b] ? a : b) 
+            : 'None Recorded';
+
+        const favRoast = Object.keys(roastComboCounts).length > 0 
+            ? Object.keys(roastComboCounts).reduce((a, b) => roastComboCounts[a] > roastComboCounts[b] ? a : b) 
             : 'None Recorded';
 
         const sortedNotes = Object.keys(noteCounts).sort((a, b) => noteCounts[b] - noteCounts[a]).slice(0, 3);
 
         document.getElementById('taster-profile-content').innerHTML = `
             <div class="profile-stat-box">
-                <h3>🌍 Favorite Origin Country</h3>
-                <p><strong>${topCountry}</strong></p>
+                <h3>🌍 Favourite Origin Country</h3>
+                <p><strong>${favCountry}</strong></p>
+            </div>
+            <div class="profile-stat-box">
+                <h3>🔥 Favourite Roast</h3>
+                <p><strong>${favRoast}</strong></p>
             </div>
             <div class="profile-stat-box">
                 <h3>🏆 Top 3 Ranked Tasting Notes</h3>
                 <ol class="ranked-list">
-                    ${sortedNotes.length > 0 ? sortedNotes.map(n => `<li><strong>${n}</strong></li>`).join('') : '<p style="font-size:0.8rem; color:var(--text-muted);">No specific tasting notes recorded yet.</p>'}
+                    ${sortedNotes.length > 0 ? sortedNotes.map(n => `<li><strong>${n}</strong></li>`).join('') : '<p style="font-size:0.8rem; color:var(--text-muted);">No bean tasting notes recorded yet.</p>'}
                 </ol>
             </div>
         `;
