@@ -768,7 +768,7 @@
                             
                             <div class="timer-btn-stack">
                                 <button class="btn btn-secondary" id="timer-toggle-btn" onclick="toggleTimerRunning()">Start Brew</button>
-                                <button class="btn" id="timer-action-btn" onclick="handlePourOrFinishPress()" style="background: var(--accent-olive);" disabled>Start Bloom</button>
+                                <button class="btn" id="timer-action-btn" onclick="handlePourOrFinishPress()" style="background: var(--accent-olive);" disabled>Start</button>
                             </div>
                         </div>
                     </div>
@@ -926,11 +926,13 @@
         let stopwatchSeconds = 0;
         let isStopwatchRunning = false;
 
-        // Compound bar flow state
-        let brewStages = []; // array of { name, duration, color }
-        let currentStageIndex = 0;
-        let currentStageSeconds = 0;
-        let stageColors = ['#D4C5B9', '#BC6C25', '#606C38', '#2C2825', '#78716C', '#4A4540'];
+        // Compound bar flow state with precise phases: bloom -> drip_bloom -> pour_1 -> drip_1 -> pour_2 -> ... -> drawdown
+        let brewPhases = []; 
+        let currentPhaseIndex = 0;
+        let currentPhaseSeconds = 0;
+        
+        // Distinct color palette for segment chunks
+        let phaseColors = ['#D4C5B9', '#BC6C25', '#606C38', '#2C2825', '#78716C', '#4A4540', '#8D6E63', '#5D4037'];
 
         let selectedCalendarDateStr = null;
         let brewIdPendingDelete = null;
@@ -1072,20 +1074,26 @@
             activeBrew.bloom = document.getElementById('param-bloom').value;
             activeBrew.pours = parseInt(document.getElementById('param-pours').value) || 3;
 
-            // Build stages
-            brewStages = [];
+            // Build dynamic phase array based on bloom toggle and pour count
+            brewPhases = [];
             let colorIdx = 0;
+
             if (activeBrew.bloom === 'Yes') {
-                brewStages.push({ name: 'Bloom', duration: 0, color: stageColors[colorIdx % stageColors.length] });
-                colorIdx++;
-            }
-            for (let i = 1; i <= activeBrew.pours; i++) {
-                brewStages.push({ name: `Pour ${i}`, duration: 0, color: stageColors[colorIdx % stageColors.length] });
-                colorIdx++;
+                brewPhases.push({ name: 'Bloom', duration: 0, color: phaseColors[colorIdx++ % phaseColors.length] });
+                brewPhases.push({ name: 'Bloom Drip', duration: 0, color: phaseColors[colorIdx++ % phaseColors.length] });
             }
 
-            currentStageIndex = 0;
-            currentStageSeconds = 0;
+            for (let i = 1; i <= activeBrew.pours; i++) {
+                brewPhases.push({ name: `Pour ${i}`, duration: 0, color: phaseColors[colorIdx++ % phaseColors.length] });
+                if (i < activeBrew.pours) {
+                    brewPhases.push({ name: `Drip ${i}`, duration: 0, color: phaseColors[colorIdx++ % phaseColors.length] });
+                }
+            }
+
+            brewPhases.push({ name: 'Drawdown', duration: 0, color: phaseColors[colorIdx++ % phaseColors.length] });
+
+            currentPhaseIndex = 0;
+            currentPhaseSeconds = 0;
             stopwatchSeconds = 0;
             isStopwatchRunning = false;
             if (stopwatchInterval) clearInterval(stopwatchInterval);
@@ -1093,9 +1101,10 @@
             // Setup UI states
             document.getElementById('timer-toggle-btn').textContent = 'Start Brew';
             document.getElementById('timer-toggle-btn').disabled = false;
-            document.getElementById('timer-action-btn').textContent = activeBrew.bloom === 'Yes' ? 'Start Bloom' : 'Start Pour 1';
+            document.getElementById('timer-action-btn').textContent = `Start ${brewPhases[0].name}`;
             document.getElementById('timer-action-btn').disabled = true;
             document.getElementById('timer-stage-indicator').textContent = 'Stage: Ready';
+            document.getElementById('timer-status-instruction').textContent = `Tap 'Start Brew' to begin`;
 
             updateCompoundBarUI();
         }
@@ -1109,9 +1118,9 @@
                 if (stopwatchInterval) clearInterval(stopwatchInterval);
                 stopwatchInterval = setInterval(() => {
                     stopwatchSeconds++;
-                    currentStageSeconds++;
-                    if (brewStages[currentStageIndex]) {
-                        brewStages[currentStageIndex].duration = currentStageSeconds;
+                    currentPhaseSeconds++;
+                    if (brewPhases[currentPhaseIndex]) {
+                        brewPhases[currentPhaseIndex].duration = currentPhaseSeconds;
                     }
                     updateCompoundBarUI();
                 }, 1000);
@@ -1125,17 +1134,17 @@
         function handlePourOrFinishPress() {
             if (!isStopwatchRunning) return;
 
-            // Advance to next stage or finish
-            if (currentStageIndex < brewStages.length - 1) {
-                currentStageIndex++;
-                currentStageSeconds = 0;
+            // Advance to next phase or finish if on final drawdown
+            if (currentPhaseIndex < brewPhases.length - 1) {
+                currentPhaseIndex++;
+                currentPhaseSeconds = 0;
                 
-                const nextStageName = brewStages[currentStageIndex].name;
-                document.getElementById('timer-action-btn').textContent = `Start ${nextStageName}`;
-                document.getElementById('timer-status-instruction').textContent = `Brewing: ${nextStageName} in progress...`;
+                const nextPhaseName = brewPhases[currentPhaseIndex].name;
+                document.getElementById('timer-action-btn').textContent = `Start ${nextPhaseName}`;
+                document.getElementById('timer-status-instruction').textContent = `Brewing: ${nextPhaseName} in progress...`;
                 updateCompoundBarUI();
             } else {
-                // Final stage finished -> Automatically end timer and proceed to Step 4
+                // Final drawdown completed -> Automatically end timer and proceed to Step 4
                 if (stopwatchInterval) clearInterval(stopwatchInterval);
                 isStopwatchRunning = false;
                 goToStep(4);
@@ -1147,22 +1156,30 @@
             const secs = stopwatchSeconds % 60;
             document.getElementById('timer-clock').textContent = `${mins}:${secs < 10 ? '0' : ''}${secs}`;
 
-            if (isStopwatchRunning && brewStages[currentStageIndex]) {
-                document.getElementById('timer-stage-indicator').textContent = `Current Stage: ${brewStages[currentStageIndex].name} (${currentStageSeconds}s)`;
-                document.getElementById('timer-status-instruction').textContent = `Tap when done with ${brewStages[currentStageIndex].name}`;
+            if (isStopwatchRunning && brewPhases[currentPhaseIndex]) {
+                document.getElementById('timer-stage-indicator').textContent = `Current Stage: ${brewPhases[currentPhaseIndex].name} (${currentPhaseSeconds}s)`;
+                document.getElementById('timer-status-instruction').textContent = `Tap action button when done with ${brewPhases[currentPhaseIndex].name}`;
             } else if (!isStopwatchRunning && stopwatchSeconds === 0) {
                 document.getElementById('timer-stage-indicator').textContent = `Stage: Ready`;
+            }
+
+            // Update button label for next transition if applicable
+            if (currentPhaseIndex < brewPhases.length - 1) {
+                const nextPhase = brewPhases[currentPhaseIndex + 1];
+                document.getElementById('timer-action-btn').textContent = `Start ${nextPhase.name}`;
+            } else {
+                document.getElementById('timer-action-btn').textContent = `Complete Brew`;
             }
 
             const container = document.getElementById('compound-bar-container');
             const totalDuration = Math.max(stopwatchSeconds, 1);
 
             let html = '';
-            brewStages.forEach((stage, idx) => {
-                if (stage.duration > 0 || idx === currentStageIndex) {
-                    const dur = stage.duration || (idx === currentStageIndex ? currentStageSeconds : 0);
-                    const pct = Math.max((dur / totalDuration) * 100, 3); // ensure at least small visible slice
-                    html += `<div class="bar-segment" style="width: ${pct}%; background: ${stage.color};" title="${stage.name}: ${dur}s"></div>`;
+            brewPhases.forEach((phase, idx) => {
+                if (phase.duration > 0 || idx === currentPhaseIndex) {
+                    const dur = phase.duration || (idx === currentPhaseIndex ? currentPhaseSeconds : 0);
+                    const pct = Math.max((dur / totalDuration) * 100, 3);
+                    html += `<div class="bar-segment" style="width: ${pct}%; background: ${phase.color};" title="${phase.name}: ${dur}s"></div>`;
                 }
             });
 
@@ -1170,14 +1187,6 @@
                 html = `<div class="bar-segment" style="width: 100%; background: var(--border-color); opacity: 0.4;"></div>`;
             }
             container.innerHTML = html;
-        }
-
-        function finishBrewTimer() {
-            if (isStopwatchRunning) {
-                clearInterval(stopwatchInterval);
-                isStopwatchRunning = false;
-            }
-            goToStep(4);
         }
 
         function verifyAndSaveBrewCard() {
