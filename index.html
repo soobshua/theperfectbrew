@@ -13,6 +13,7 @@
             --accent-beige: #D4C5B9;
             --accent-olive: #606C38;
             --accent-terracotta: #BC6C25;
+            --accent-danger: #9B2226;
             --border-color: #E6E2DD;
             --radius: 16px;
             --transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
@@ -259,6 +260,24 @@
             color: var(--text-main);
         }
 
+        .btn-danger {
+            background: transparent;
+            color: var(--accent-danger);
+            border: 1px solid var(--accent-danger);
+            padding: 0.4rem 0.75rem;
+            border-radius: 8px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            width: auto;
+        }
+
+        .btn-danger:hover {
+            background: var(--accent-danger);
+            color: #fff;
+        }
+
         .button-group {
             display: flex;
             gap: 0.5rem;
@@ -276,7 +295,7 @@
             display: none !important;
         }
 
-        /* Timer & Fitness Ring UI (Segmented Live Accumulation) */
+        /* Timer & Fitness Ring UI (Smooth Inch-Forward Segments) */
         .timer-view {
             display: flex;
             flex-direction: column;
@@ -311,6 +330,7 @@
             fill: none;
             stroke-width: 16;
             stroke-linecap: round;
+            transition: stroke-dasharray 0.3s linear;
         }
 
         .timer-center-btn {
@@ -483,6 +503,12 @@
             font-size: 1rem;
         }
 
+        .coffee-card-right {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
         .coffee-card-score {
             background: var(--accent-olive);
             color: #fff;
@@ -516,6 +542,14 @@
             display: flex;
             flex-direction: column;
             gap: 0.5rem;
+            margin-bottom: 1rem;
+            position: relative;
+        }
+
+        .optimizer-top-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
 
         .optimizer-title {
@@ -526,7 +560,7 @@
 
         .optimizer-text {
             font-size: 0.85rem;
-            line-height: 1.4;
+            line-height: 1.5;
             color: var(--text-main);
         }
 
@@ -670,7 +704,8 @@
                         <div class="ring-container">
                             <svg class="ring-svg" viewBox="0 0 100 100" id="ring-svg-element">
                                 <circle class="ring-bg" cx="50" cy="50" r="42"></circle>
-                                <!-- Segments injected dynamically as timer progresses -->
+                                <!-- Active segment inches forward dynamically -->
+                                <circle id="active-ring-segment" class="ring-segment" cx="50" cy="50" r="42" stroke="#D4C5B9" stroke-dasharray="0 264" stroke-dashoffset="0"></circle>
                             </svg>
                             <button class="timer-center-btn" onclick="handleTimerButtonPress()">
                                 <span class="timer-state-label" id="timer-action-label">Tap to Start</span>
@@ -771,6 +806,7 @@
         let totalTimerSeconds = 0;
         let phaseTimerSeconds = 0;
         let isTimerRunning = false;
+        let selectedCalendarDateStr = null;
         const circumference = 264; // 2 * PI * 42
 
         // Navigation
@@ -921,8 +957,15 @@
 
         function resetRingSVG() {
             const svg = document.getElementById('ring-svg-element');
-            const existingSegments = svg.querySelectorAll('.ring-segment');
+            const existingSegments = svg.querySelectorAll('.extra-segment');
             existingSegments.forEach(el => el.remove());
+
+            const activeSeg = document.getElementById('active-ring-segment');
+            activeSeg.setAttribute('stroke-dasharray', `0 ${circumference}`);
+            activeSeg.setAttribute('stroke-dashoffset', `${circumference}`);
+            if (activeBrew.phases.length > 0) {
+                activeSeg.setAttribute('stroke', activeBrew.phases[0].color);
+            }
         }
 
         function updateTimerUI() {
@@ -936,6 +979,12 @@
             const mins = Math.floor(totalTimerSeconds / 60);
             const secs = totalTimerSeconds % 60;
             document.getElementById('timer-clock').textContent = `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+
+            // Inch forward smoothly (each second increments progress visually within a simulated max phase duration of 45s or proportionate loop)
+            const activeSeg = document.getElementById('active-ring-segment');
+            const progressRatio = Math.min(phaseTimerSeconds / 45, 1); // 45s cap per phase for visual filling
+            const dashLen = circumference * progressRatio;
+            activeSeg.setAttribute('stroke-dasharray', `${dashLen} ${circumference}`);
         }
 
         function handleTimerButtonPress() {
@@ -947,18 +996,32 @@
                     updateTimerUI();
                 }, 1000);
             } else {
-                // Manual lap / advance to next phase
+                // Manual lap / advance to next phase & lock current segment color in place
                 advanceTimerPhase();
             }
         }
 
         function advanceTimerPhase() {
-            // Draw current phase segment proportionally based on elapsed phase seconds
-            const phase = activeBrew.phases[activeBrew.currentPhaseIdx];
-            const segmentDuration = Math.max(phaseTimerSeconds, 1);
+            const svg = document.getElementById('ring-svg-element');
+            const activeSeg = document.getElementById('active-ring-segment');
+            
+            // Freeze current filled segment as a static history element
+            const currentDashArray = activeSeg.getAttribute('stroke-dasharray');
+            const currentColor = activeSeg.getAttribute('stroke');
 
-            // Append completed segment to SVG ring cumulatively
-            appendRingSegment(segmentDuration, phase.color);
+            if (currentDashArray && !currentDashArray.startsWith('0 ')) {
+                const clone = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                clone.setAttribute('class', 'extra-segment');
+                clone.setAttribute('cx', '50');
+                clone.setAttribute('cy', '50');
+                clone.setAttribute('r', '42');
+                clone.setAttribute('stroke', currentColor);
+                clone.setAttribute('stroke-width', '16');
+                clone.setAttribute('stroke-linecap', 'round');
+                clone.setAttribute('fill', 'none');
+                clone.setAttribute('stroke-dasharray', currentDashArray);
+                svg.insertBefore(clone, activeSeg);
+            }
 
             phaseTimerSeconds = 0;
             activeBrew.currentPhaseIdx++;
@@ -968,72 +1031,11 @@
                 isTimerRunning = false;
                 goToStep(4);
             } else {
+                // Set active segment to new phase color and reset zero
+                const nextPhase = activeBrew.phases[activeBrew.currentPhaseIdx];
+                activeSeg.setAttribute('stroke', nextPhase.color);
+                activeSeg.setAttribute('stroke-dasharray', `0 ${circumference}`);
                 updateTimerUI();
-            }
-        }
-
-        function appendRingSegment(duration, color) {
-            const svg = document.getElementById('ring-svg-element');
-            
-            // Calculate total time accumulated so far across all finished phases
-            let pastSeconds = 0;
-            for (let i = 0; i < activeBrew.currentPhaseIdx; i++) {
-                // we approximate or store actual past durations
-            }
-            // For precise relative sizing on the circle, we scale against total elapsed seconds
-            // Let's compute cumulative offsets cleanly:
-            const allSegments = svg.querySelectorAll('.ring-segment');
-            let currentOffsetUsed = 0;
-            allSegments.forEach(seg => {
-                const len = parseFloat(seg.getAttribute('data-length') || 0);
-                currentOffsetUsed += len;
-            });
-
-            // To avoid complexity, let's map each segment proportionally or use simple stroke-dasharray arcs.
-            // A robust way for continuous segments:
-            const totalSoFar = totalTimerSeconds;
-            const startDashOffset = circumference - (circumference * (Math.max(0, totalSoFar - duration) / Math.max(totalSoFar, 1)));
-            const endDashOffset = circumference - (circumference * (totalSoFar / Math.max(totalSoFar, 1)));
-            
-            // Simpler reliable visual representation for live accumulation:
-            // We can re-render all completed segments based on their exact time ratio relative to totalTimerSeconds
-            
-            renderAllCompletedSegments();
-        }
-
-        function renderAllCompletedSegments() {
-            const svg = document.getElementById('ring-svg-element');
-            const existingSegments = svg.querySelectorAll('.ring-segment');
-            existingSegments.forEach(el => el.remove());
-
-            // Let's track phase durations recorded
-            if (!activeBrew.recordedDurations) activeBrew.recordedDurations = [];
-            activeBrew.recordedDurations[activeBrew.currentPhaseIdx] = phaseTimerSeconds;
-
-            const totalSum = activeBrew.recordedDurations.reduce((a, b) => a + (b || 0), 0);
-            if (totalSum <= 0) return;
-
-            let accumulated = 0;
-            for (let i = 0; i <= activeBrew.currentPhaseIdx; i++) {
-                const dur = activeBrew.recordedDurations[i] || 0;
-                if (dur === 0) continue;
-
-                const startRatio = accumulated / totalSum;
-                accumulated += dur;
-                const endRatio = accumulated / totalSum;
-
-                const startDashOffset = circumference - (circumference * startRatio);
-                const dashLength = circumference * (endRatio - startRatio);
-
-                const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-                circle.setAttribute('class', 'ring-segment');
-                circle.setAttribute('cx', '50');
-                circle.setAttribute('cy', '50');
-                circle.setAttribute('r', '42');
-                circle.setAttribute('stroke', activeBrew.phases[i].color);
-                circle.setAttribute('stroke-dasharray', `${dashLength} ${circumference}`);
-                circle.setAttribute('stroke-dashoffset', `${startDashOffset}`);
-                svg.appendChild(circle);
             }
         }
 
@@ -1072,6 +1074,20 @@
             switchTab('dashboard');
         }
 
+        function deleteBrew(id) {
+            if (confirm('Are you sure you want to delete this brew entry?')) {
+                db.brews = db.brews.filter(b => b.id !== id);
+                localStorage.setItem('brewlog_db', JSON.stringify(db));
+
+                // Refresh active modal views if open
+                if (selectedCalendarDateStr) {
+                    selectCalendarDate(selectedCalendarDateStr);
+                }
+                renderCalendarGrid();
+                renderAnalytics();
+            }
+        }
+
         function renderAnalytics() {
             const container = document.getElementById('bean-stats-container');
             if (db.brews.length === 0) {
@@ -1089,16 +1105,33 @@
             for (let beanName in groups) {
                 const brews = groups[beanName];
                 const avgRank = brews.reduce((sum, c) => sum + c.rank, 0) / brews.length;
-                const sortedByRank = [...brews].sort((a,b) => b.rank - a.rank);
-                const optimalGrind = sortedByRank[0].grind;
+                
+                let bitterCount = 0;
+                let sourCount = 0;
+                let recentGrind = brews[0].grind;
+                let recentTemp = brews[0].temp;
+
+                brews.forEach(b => {
+                    const text = (b.notes || '').toLowerCase();
+                    if (text.includes('bitter') || text.includes('astringent') || text.includes('harsh') || text.includes('over')) bitterCount++;
+                    if (text.includes('sour') || text.includes('acidic') || text.includes('bright') || text.includes('under')) sourCount++;
+                });
+
+                let advice = `Average Rating: <strong>${avgRank.toFixed(1)}/10</strong> across ${brews.length} logged cup(s).<br><br>`;
+                if (bitterCount > sourCount) {
+                    advice += `⚠️ <strong>Over-Extraction Detected:</strong> Multiple tasting notes mentioned bitterness or harshness. Try <strong>increasing your grind coarseness</strong> (e.g., moving past your current setting of ${recentGrind}) or <strong>lowering your water temperature</strong> below ${recentTemp}°C to reduce harsh extraction.`;
+                } else if (sourCount > bitterCount) {
+                    advice += `⚠️ <strong>Under-Extraction Detected:</strong> Multiple tasting notes reported sourness or excessive acidity. Try <strong>grinding finer</strong> than ${recentGrind} or <strong>increasing water temperature</strong> above ${recentTemp}°C to extract more sweetness.`;
+                } else {
+                    advice += `✨ <strong>Balanced Profile:</strong> Your extractions show good equilibrium. Maintain your current grind setting around <strong>${recentGrind}</strong> and water temperature at <strong>${recentTemp}°C</strong>, focusing on consistent pour timing.`;
+                }
 
                 html += `
                     <div class="optimizer-box">
-                        <div class="optimizer-title">${beanName} (${brews.length} cups logged)</div>
-                        <div class="optimizer-text">
-                            Average Rating: <strong>${avgRank.toFixed(1)}/10</strong><br>
-                            💡 <strong>Optimization Suggestion:</strong> Your highest-rated cup used grind size <strong>${optimalGrind}</strong>. Suggest sticking around this setting!
+                        <div class="optimizer-top-row">
+                            <div class="optimizer-title">${beanName}</div>
                         </div>
+                        <div class="optimizer-text" style="margin-top: 0.5rem;">${advice}</div>
                     </div>
                 `;
             }
@@ -1168,6 +1201,7 @@
 
         function closeModals() {
             document.querySelectorAll('.modal-backdrop').forEach(m => m.classList.remove('active'));
+            selectedCalendarDateStr = null;
         }
 
         function renderCalendarGrid() {
@@ -1209,6 +1243,7 @@
         }
 
         function selectCalendarDate(dateStr) {
+            selectedCalendarDateStr = dateStr;
             const container = document.getElementById('calendar-day-cards');
             const matchingBrews = db.brews.filter(b => b.date === dateStr);
 
@@ -1226,7 +1261,10 @@
                                 <div class="coffee-card-bean">${brew.beanName}</div>
                                 <div style="font-size: 0.75rem; color: var(--text-muted);">${brew.roast} Roast • ${brew.flavor || 'No flavor tags'}</div>
                             </div>
-                            <div class="coffee-card-score">${brew.rank}/10</div>
+                            <div class="coffee-card-right">
+                                <div class="coffee-card-score">${brew.rank}/10</div>
+                                <button class="btn-danger" onclick="deleteBrew(${brew.id})">Delete</button>
+                            </div>
                         </div>
                         <div class="coffee-card-meta">
                             <div>Grind: ${brew.grind} clicks</div>
