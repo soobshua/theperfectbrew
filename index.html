@@ -276,7 +276,7 @@
             display: none !important;
         }
 
-        /* Timer & Fitness Ring UI (Cumulative Segments) */
+        /* Timer & Fitness Ring UI (Segmented Live Accumulation) */
         .timer-view {
             display: flex;
             flex-direction: column;
@@ -670,7 +670,7 @@
                         <div class="ring-container">
                             <svg class="ring-svg" viewBox="0 0 100 100" id="ring-svg-element">
                                 <circle class="ring-bg" cx="50" cy="50" r="42"></circle>
-                                <!-- Segments injected dynamically -->
+                                <!-- Segments injected dynamically as timer progresses -->
                             </svg>
                             <button class="timer-center-btn" onclick="handleTimerButtonPress()">
                                 <span class="timer-state-label" id="timer-action-label">Tap to Start</span>
@@ -768,9 +768,10 @@
         };
 
         let timerInterval = null;
-        let phaseTimerSeconds = 0;
         let totalTimerSeconds = 0;
+        let phaseTimerSeconds = 0;
         let isTimerRunning = false;
+        const circumference = 264; // 2 * PI * 42
 
         // Navigation
         function switchTab(tabId) {
@@ -814,7 +815,6 @@
                 tipsContainer.style.display = 'none';
             } else {
                 newFields.style.display = 'none';
-                // Existing bean selected: generate tips based on past brews
                 const selectedBeanName = db.beans[val].name;
                 const pastBrews = db.brews.filter(b => b.beanName.toLowerCase() === selectedBeanName.toLowerCase());
                 
@@ -847,6 +847,12 @@
         }
 
         function goToStep(stepNum) {
+            // Stop timer if leaving timer view
+            if (stepNum !== 3 && isTimerRunning) {
+                clearInterval(timerInterval);
+                isTimerRunning = false;
+            }
+
             document.getElementById('step-beans').classList.add('step-hidden');
             document.getElementById('step-params').classList.add('step-hidden');
             document.getElementById('step-timer').classList.add('step-hidden');
@@ -873,7 +879,7 @@
             }
         }
 
-        // Timer & Recipe Structure Setup (Cumulative Circle Segments)
+        // Timer & Recipe Setup
         function startTimerSession() {
             const beanVal = document.getElementById('bean-select').value;
             if (beanVal === 'new') {
@@ -896,11 +902,11 @@
 
             activeBrew.phases = [];
             if (activeBrew.bloom === 'yes') {
-                activeBrew.phases.push({ name: 'Bloom', duration: 30, color: '#D4C5B9' }); // Beige
+                activeBrew.phases.push({ name: 'Bloom', color: '#D4C5B9' }); // Beige
             }
             for (let i = 1; i <= activeBrew.poursCount; i++) {
-                activeBrew.phases.push({ name: `Pour ${i}`, duration: 15, color: '#BC6C25' }); // Terracotta
-                activeBrew.phases.push({ name: `Drawdown ${i}`, duration: 45, color: '#606C38' }); // Olive
+                activeBrew.phases.push({ name: `Pour ${i}`, color: '#BC6C25' }); // Terracotta
+                activeBrew.phases.push({ name: `Drawdown ${i}`, color: '#606C38' }); // Olive
             }
 
             activeBrew.currentPhaseIdx = 0;
@@ -909,47 +915,23 @@
             isTimerRunning = false;
 
             goToStep(3);
+            resetRingSVG();
             updateTimerUI();
-            renderRingSegments();
         }
 
-        function renderRingSegments() {
+        function resetRingSVG() {
             const svg = document.getElementById('ring-svg-element');
-            // Remove existing segments except bg circle
             const existingSegments = svg.querySelectorAll('.ring-segment');
             existingSegments.forEach(el => el.remove());
-
-            const totalDuration = activeBrew.phases.reduce((sum, p) => sum + p.duration, 0);
-            let accumulatedSeconds = 0;
-            const circumference = 264; // 2 * PI * 42
-
-            activeBrew.phases.forEach((phase, idx) => {
-                const startOffset = circumference - (circumference * (accumulatedSeconds / totalDuration));
-                accumulatedSeconds += phase.duration;
-                const endOffset = circumference - (circumference * (accumulatedSeconds / totalDuration));
-                
-                const strokeLength = startOffset - endOffset;
-
-                const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-                circle.setAttribute('class', 'ring-segment');
-                circle.setAttribute('cx', '50');
-                circle.setAttribute('cy', '50');
-                circle.setAttribute('r', '42');
-                circle.setAttribute('stroke', phase.color);
-                circle.setAttribute('stroke-dasharray', `${strokeLength} ${circumference}`);
-                circle.setAttribute('stroke-dashoffset', `${startOffset}`);
-                circle.setAttribute('id', `ring-seg-${idx}`);
-                svg.appendChild(circle);
-            });
         }
 
         function updateTimerUI() {
             const phase = activeBrew.phases[activeBrew.currentPhaseIdx];
             if (phase) {
-                document.getElementById('timer-status-instruction').textContent = phase.name;
+                document.getElementById('timer-status-instruction').textContent = `${phase.name} (${phaseTimerSeconds}s)`;
                 document.getElementById('timer-phase-counter').textContent = `Phase ${activeBrew.currentPhaseIdx + 1} of ${activeBrew.phases.length}`;
             }
-            document.getElementById('timer-action-label').textContent = isTimerRunning ? 'Next / Lap' : 'Tap to Start';
+            document.getElementById('timer-action-label').textContent = isTimerRunning ? 'Next Phase' : 'Tap to Start';
             
             const mins = Math.floor(totalTimerSeconds / 60);
             const secs = totalTimerSeconds % 60;
@@ -962,26 +944,96 @@
                 timerInterval = setInterval(() => {
                     totalTimerSeconds++;
                     phaseTimerSeconds++;
-                    
-                    const phase = activeBrew.phases[activeBrew.currentPhaseIdx];
-                    if (phase && phaseTimerSeconds >= phase.duration) {
-                        advanceTimerPhase();
-                    }
                     updateTimerUI();
                 }, 1000);
             } else {
+                // Manual lap / advance to next phase
                 advanceTimerPhase();
             }
-            updateTimerUI();
         }
 
         function advanceTimerPhase() {
+            // Draw current phase segment proportionally based on elapsed phase seconds
+            const phase = activeBrew.phases[activeBrew.currentPhaseIdx];
+            const segmentDuration = Math.max(phaseTimerSeconds, 1);
+
+            // Append completed segment to SVG ring cumulatively
+            appendRingSegment(segmentDuration, phase.color);
+
             phaseTimerSeconds = 0;
             activeBrew.currentPhaseIdx++;
+
             if (activeBrew.currentPhaseIdx >= activeBrew.phases.length) {
                 clearInterval(timerInterval);
                 isTimerRunning = false;
                 goToStep(4);
+            } else {
+                updateTimerUI();
+            }
+        }
+
+        function appendRingSegment(duration, color) {
+            const svg = document.getElementById('ring-svg-element');
+            
+            // Calculate total time accumulated so far across all finished phases
+            let pastSeconds = 0;
+            for (let i = 0; i < activeBrew.currentPhaseIdx; i++) {
+                // we approximate or store actual past durations
+            }
+            // For precise relative sizing on the circle, we scale against total elapsed seconds
+            // Let's compute cumulative offsets cleanly:
+            const allSegments = svg.querySelectorAll('.ring-segment');
+            let currentOffsetUsed = 0;
+            allSegments.forEach(seg => {
+                const len = parseFloat(seg.getAttribute('data-length') || 0);
+                currentOffsetUsed += len;
+            });
+
+            // To avoid complexity, let's map each segment proportionally or use simple stroke-dasharray arcs.
+            // A robust way for continuous segments:
+            const totalSoFar = totalTimerSeconds;
+            const startDashOffset = circumference - (circumference * (Math.max(0, totalSoFar - duration) / Math.max(totalSoFar, 1)));
+            const endDashOffset = circumference - (circumference * (totalSoFar / Math.max(totalSoFar, 1)));
+            
+            // Simpler reliable visual representation for live accumulation:
+            // We can re-render all completed segments based on their exact time ratio relative to totalTimerSeconds
+            
+            renderAllCompletedSegments();
+        }
+
+        function renderAllCompletedSegments() {
+            const svg = document.getElementById('ring-svg-element');
+            const existingSegments = svg.querySelectorAll('.ring-segment');
+            existingSegments.forEach(el => el.remove());
+
+            // Let's track phase durations recorded
+            if (!activeBrew.recordedDurations) activeBrew.recordedDurations = [];
+            activeBrew.recordedDurations[activeBrew.currentPhaseIdx] = phaseTimerSeconds;
+
+            const totalSum = activeBrew.recordedDurations.reduce((a, b) => a + (b || 0), 0);
+            if (totalSum <= 0) return;
+
+            let accumulated = 0;
+            for (let i = 0; i <= activeBrew.currentPhaseIdx; i++) {
+                const dur = activeBrew.recordedDurations[i] || 0;
+                if (dur === 0) continue;
+
+                const startRatio = accumulated / totalSum;
+                accumulated += dur;
+                const endRatio = accumulated / totalSum;
+
+                const startDashOffset = circumference - (circumference * startRatio);
+                const dashLength = circumference * (endRatio - startRatio);
+
+                const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                circle.setAttribute('class', 'ring-segment');
+                circle.setAttribute('cx', '50');
+                circle.setAttribute('cy', '50');
+                circle.setAttribute('r', '42');
+                circle.setAttribute('stroke', activeBrew.phases[i].color);
+                circle.setAttribute('stroke-dasharray', `${dashLength} ${circumference}`);
+                circle.setAttribute('stroke-dashoffset', `${startDashOffset}`);
+                svg.appendChild(circle);
             }
         }
 
@@ -1061,10 +1113,8 @@
             if (db.brews.length === 0) {
                 body.innerHTML = `<p>Log some coffee cups to generate your taster profile.</p>`;
             } else {
-                // Region extraction (approximate from bean names containing parentheses or words)
                 const regionCounts = {};
                 db.brews.forEach(b => {
-                    // Extract region/country proxy from beanName
                     const region = b.beanName.split(' ')[0] || 'Unknown';
                     regionCounts[region] = (regionCounts[region] || 0) + 1;
                 });
@@ -1074,7 +1124,6 @@
                 db.brews.forEach(b => roastCounts[b.roast] = (roastCounts[b.roast] || 0) + 1);
                 let topRoast = Object.keys(roastCounts).reduce((a, b) => roastCounts[a] > roastCounts[b] ? a : b);
 
-                // Collect & rank tasting notes
                 const noteCounts = {};
                 db.brews.forEach(b => {
                     if (b.flavor) {
