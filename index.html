@@ -55,15 +55,15 @@
         }
 
         h1 {
-            font-size: 1.2rem;
+            font-size: 1.1rem;
             font-weight: 600;
             color: var(--accent);
         }
 
         .nav-links {
             display: flex;
-            gap: 12px;
-            font-size: 0.85rem;
+            gap: 10px;
+            font-size: 0.8rem;
         }
 
         .nav-links a {
@@ -209,7 +209,7 @@
             transition: width 0.3s ease;
         }
 
-        /* Suggestion & Inventory Cards */
+        /* Cards & Grouping */
         .suggestion-card {
             background: #fff8f0;
             border-left: 4px solid var(--accent);
@@ -279,6 +279,40 @@
             background: #b22222;
             color: white;
         }
+
+        .group-header {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--accent);
+            margin: 16px 0 8px 0;
+            padding-bottom: 4px;
+            border-bottom: 1px dashed var(--border-color);
+        }
+
+        /* Taster Profile Dashboard Stats */
+        .profile-stat-box {
+            background: #faf8f5;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 14px;
+            margin-bottom: 14px;
+            font-size: 0.85rem;
+        }
+
+        .profile-stat-box h3 {
+            font-size: 0.9rem;
+            color: var(--accent);
+            margin-bottom: 8px;
+        }
+
+        .ranked-list {
+            padding-left: 18px;
+            margin-top: 4px;
+        }
+
+        .ranked-list li {
+            margin-bottom: 3px;
+        }
     </style>
 </head>
 <body>
@@ -289,6 +323,7 @@
         <div class="nav-links">
             <a id="nav-brew" onclick="goToStep(1)" class="active">Brew</a>
             <a id="nav-beans" onclick="renderBeanManager(); goToStep(5);">Beans</a>
+            <a id="nav-profile" onclick="renderTasterProfile(); goToStep(6);">Profile</a>
             <a id="nav-history" onclick="renderHistoryList(); goToStep(4);">History</a>
         </div>
     </div>
@@ -306,8 +341,8 @@
 
         <div id="new-bean-section" style="display: none; background: #faf8f5; padding: 12px; border-radius: 8px; margin-bottom: 16px; border: 1px solid var(--border-color);">
             <div class="form-group">
-                <label>Bean Name</label>
-                <input type="text" id="bean-name" placeholder="e.g. Kenya Nyeri Hill">
+                <label>Bean Name & Origin Country</label>
+                <input type="text" id="bean-name" placeholder="e.g. Kenya Nyeri Hill (Kenya)">
             </div>
             <div class="row">
                 <div class="form-group">
@@ -316,12 +351,24 @@
                         <option value="Light">Light</option>
                         <option value="Medium-Light">Medium-Light</option>
                         <option value="Medium">Medium</option>
+                        <option value="Medium-Dark">Medium-Dark</option>
+                        <option value="Dark">Dark</option>
                     </select>
                 </div>
                 <div class="form-group">
-                    <label>Flavor Notes</label>
-                    <input type="text" id="bean-flavor" placeholder="e.g. Jasmine, Peach">
+                    <label>Flavor Profile Tag</label>
+                    <select id="bean-flavor-type">
+                        <option value="Fruity">Fruity</option>
+                        <option value="Nutty">Nutty</option>
+                        <option value="Floral">Floral</option>
+                        <option value="Chocolatey">Chocolatey</option>
+                        <option value="Spicy">Spicy</option>
+                    </select>
                 </div>
+            </div>
+            <div class="form-group" style="margin-top: 8px;">
+                <label>Specific Tasting Notes</label>
+                <input type="text" id="bean-flavor" placeholder="e.g. Jasmine, Peach, Blackcurrant">
             </div>
         </div>
 
@@ -361,7 +408,7 @@
             </div>
         </div>
 
-        <button onclick="startTimerSetup()" id="proceed-brew-btn">Proceed to Stopwatch</button>
+        <button onclick="startTimerSetup()" id="proceed-brew-btn" disabled>Proceed to Stopwatch</button>
     </div>
 
     <!-- STEP 2: MANUAL CHECKPOINT STOPWATCH -->
@@ -390,9 +437,7 @@
     <div id="step-3" class="step-panel">
         <h2 style="font-size: 1.05rem; margin-bottom: 12px; color: var(--accent);">Brew Complete Analysis</h2>
         
-        <div id="analytics-suggestions-box">
-            <!-- Dynamic optimization insights injected here -->
-        </div>
+        <div id="analytics-suggestions-box"></div>
 
         <div class="form-group">
             <label>Overall Cup Score (1 - 10)</label>
@@ -407,23 +452,21 @@
         <button onclick="saveBrewSession()">Save & View History</button>
     </div>
 
-    <!-- STEP 4: HISTORY & INSIGHTS -->
+    <!-- STEP 4: HISTORY -->
     <div id="step-4" class="step-panel">
         <h2 style="font-size: 1.05rem; margin-bottom: 12px; color: var(--accent);">Logged Brew History</h2>
-        <div id="history-list-container">
-            <!-- Past sessions rendered here -->
-        </div>
+        <div id="history-list-container"></div>
         <button onclick="goToStep(1)">Brew Another Cup</button>
     </div>
 
-    <!-- STEP 5: BEAN MANAGER ORGANIZER -->
+    <!-- STEP 5: BEAN MANAGER (GROUPED & SORTED) -->
     <div id="step-5" class="step-panel">
         <h2 style="font-size: 1.05rem; margin-bottom: 12px; color: var(--accent);">Bean Inventory Manager</h2>
         
         <div style="background: #faf8f5; padding: 12px; border-radius: 8px; margin-bottom: 16px; border: 1px solid var(--border-color);">
             <div class="form-group" style="margin-bottom: 10px;">
                 <label id="bean-form-title">Add New Bean Inventory</label>
-                <input type="text" id="mgr-name" placeholder="Bean Name / Origin">
+                <input type="text" id="mgr-name" placeholder="Bean Name & Origin Country">
             </div>
             <div class="row" style="margin-bottom: 10px;">
                 <div class="form-group" style="margin-bottom:0;">
@@ -432,27 +475,43 @@
                         <option value="Light">Light</option>
                         <option value="Medium-Light">Medium-Light</option>
                         <option value="Medium">Medium</option>
+                        <option value="Medium-Dark">Medium-Dark</option>
+                        <option value="Dark">Dark</option>
                     </select>
                 </div>
                 <div class="form-group" style="margin-bottom:0;">
-                    <label>Flavor Notes</label>
-                    <input type="text" id="mgr-flavor" placeholder="e.g. Floral, Citrus">
+                    <label>Flavor Profile Tag</label>
+                    <select id="mgr-flavor-type">
+                        <option value="Fruity">Fruity</option>
+                        <option value="Nutty">Nutty</option>
+                        <option value="Floral">Floral</option>
+                        <option value="Chocolatey">Chocolatey</option>
+                        <option value="Spicy">Spicy</option>
+                    </select>
                 </div>
+            </div>
+            <div class="form-group" style="margin-top: 8px;">
+                <label>Specific Tasting Notes</label>
+                <input type="text" id="mgr-flavor" placeholder="e.g. Jasmine, Peach, Blackcurrant">
             </div>
             <input type="hidden" id="mgr-edit-index" value="-1">
             <button onclick="saveBeanFromManager()" id="mgr-save-btn" style="margin-top: 10px;">Save Bean Profile</button>
             <button id="mgr-cancel-btn" onclick="resetBeanManagerForm()" style="display:none; background: transparent; color: var(--text-muted); border: 1px solid var(--border-color); margin-top: 6px;">Cancel Edit</button>
         </div>
 
-        <div id="bean-manager-list">
-            <!-- Active & archived bean cards rendered here -->
-        </div>
+        <div id="bean-manager-list"></div>
+        <button onclick="goToStep(1)" style="margin-top: 16px;">Back to Brew Setup</button>
+    </div>
+
+    <!-- STEP 6: COFFEE TASTER PROFILE DASHBOARD -->
+    <div id="step-6" class="step-panel">
+        <h2 style="font-size: 1.05rem; margin-bottom: 12px; color: var(--accent);">Coffee Taster Profile & Preferences</h2>
+        <div id="taster-profile-content"></div>
         <button onclick="goToStep(1)" style="margin-top: 16px;">Back to Brew Setup</button>
     </div>
 </div>
 
 <script>
-    // Master Database
     const db = {
         beans: [],
         sessions: []
@@ -468,35 +527,32 @@
 
     const phaseColors = ['#8b5a2b', '#c29b61', '#d4b58a', '#e8d5b5', '#6f4520', '#a37042', '#b88654'];
 
-    // Navigation and Panel Control
     function goToStep(stepNum) {
         document.querySelectorAll('.step-panel').forEach(p => p.classList.remove('active'));
         document.getElementById(`step-${stepNum}`).classList.add('active');
 
-        // Update nav highlights
         document.querySelectorAll('.nav-links a').forEach(a => a.classList.remove('active'));
         if (stepNum === 1 || stepNum === 2 || stepNum === 3) document.getElementById('nav-brew').classList.add('active');
         if (stepNum === 4) document.getElementById('nav-history').classList.add('active');
         if (stepNum === 5) document.getElementById('nav-beans').classList.add('active');
+        if (stepNum === 6) document.getElementById('nav-profile').classList.add('active');
 
         const subtitles = {
             1: "Log, Time, and Refine Your Brews",
             2: "Manual Checkpoint Stopwatch Mode",
             3: "Performance Insights & Cup Scoring",
             4: "Archived Logs & Optimization Progress",
-            5: "Organize, Edit, and Archive Your Bean Stash"
+            5: "Organize, Edit, and Archive Your Bean Stash",
+            6: "Your Analytical Taster Dashboard & Ranked Preferences"
         };
         document.getElementById('top-subtitle').textContent = subtitles[stepNum];
 
-        if (stepNum === 1) {
-            updateBeanSelectDropdown();
-        }
-        if (stepNum === 2) {
-            initStopwatchSession();
-        }
+        if (stepNum === 1) updateBeanSelectDropdown();
+        if (stepNum === 2) initStopwatchSession();
+        if (stepNum === 5) renderBeanManager();
+        if (stepNum === 6) renderTasterProfile();
     }
 
-    // Bean Dropdown Management in Brew Panel
     function updateBeanSelectDropdown(selectedName = "") {
         const select = document.getElementById('bean-select');
         select.innerHTML = '<option value="" disabled selected>-- Select a Bean Profile --</option>';
@@ -505,7 +561,7 @@
         activeBeans.forEach((b, idx) => {
             const opt = document.createElement('option');
             opt.value = idx;
-            opt.textContent = `${b.name} (${b.roast} - ${b.flavor})`;
+            opt.textContent = `${b.name} (${b.roast} - ${b.flavorType || 'Fruity'})`;
             if (b.name === selectedName) opt.selected = true;
             select.appendChild(opt);
         });
@@ -541,7 +597,15 @@
         goToStep(2);
     }
 
-    // Bean Inventory Manager Functions (Step 5)
+    // Helper to calculate average ranking score for a bean based on past sessions
+    function getBeanAverageScore(beanName) {
+        const matchingSessions = db.sessions.filter(s => s.beanName === beanName);
+        if (matchingSessions.length === 0) return 0;
+        const sum = matchingSessions.reduce((acc, s) => acc + parseFloat(s.score || 0), 0);
+        return sum / matchingSessions.length;
+    }
+
+    // Bean Manager Grouped by Type and Sorted by Average Ranking Score
     function renderBeanManager() {
         const container = document.getElementById('bean-manager-list');
         if (db.beans.length === 0) {
@@ -549,43 +613,63 @@
             return;
         }
 
-        let html = '';
+        // Group beans by flavor type / category
+        const groups = {};
         db.beans.forEach((b, idx) => {
-            html += `
-                <div class="item-card" style="${b.archived ? 'opacity: 0.6; background: #faf8f5;' : ''}">
-                    <div class="item-card-header">
-                        <strong>${b.name}</strong>
-                        <span class="badge">${b.roast} ${b.archived ? '(Archived)' : ''}</span>
-                    </div>
-                    <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 6px;">
-                        Notes: ${b.flavor || 'None specified'}
-                    </div>
-                    <div class="card-actions">
-                        <button onclick="editBean(${idx})">Edit</button>
-                        <button onclick="toggleArchiveBean(${idx})" class="danger">${b.archived ? 'Unarchive' : 'Archive'}</button>
-                    </div>
-                </div>
-            `;
+            const type = b.flavorType || 'Fruity';
+            if (!groups[type]) groups[type] = [];
+            groups[type].push({ ...b, originalIndex: idx });
         });
+
+        // Within each group, sort beans by average ranking score descending
+        Object.keys(groups).forEach(type => {
+            groups[type].sort((a, b) => getBeanAverageScore(b.name) - getBeanAverageScore(a.name));
+        });
+
+        let html = '';
+        Object.keys(groups).forEach(type => {
+            html += `<div class="group-header">${type} Beans</div>`;
+            groups[type].forEach(b => {
+                const avgScore = getBeanAverageScore(b.name);
+                html += `
+                    <div class="item-card" style="${b.archived ? 'opacity: 0.6; background: #faf8f5;' : ''}">
+                        <div class="item-card-header">
+                            <strong>${b.name}</strong>
+                            <span class="badge">${b.roast} | Avg: ${avgScore > 0 ? avgScore.toFixed(1) : 'N/A'}/10 ${b.archived ? '(Archived)' : ''}</span>
+                        </div>
+                        <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 6px;">
+                            Notes: ${b.flavor || 'None specified'}
+                        </div>
+                        <div class="card-actions">
+                            <button onclick="editBean(${b.originalIndex})">Edit</button>
+                            <button onclick="toggleArchiveBean(${b.originalIndex})" class="danger">${b.archived ? 'Unarchive' : 'Archive'}</button>
+                        </div>
+                    </div>
+                `;
+            });
+        });
+
         container.innerHTML = html;
     }
 
     function saveBeanFromManager() {
         const name = document.getElementById('mgr-name').value.trim();
         const roast = document.getElementById('mgr-roast').value;
+        const flavorType = document.getElementById('mgr-flavor-type').value;
         const flavor = document.getElementById('mgr-flavor').value.trim();
         const editIdx = parseInt(document.getElementById('mgr-edit-index').value);
 
         if (!name) {
-            alert('Please enter a bean name.');
+            alert('Please enter a bean name and origin.');
             return;
         }
 
         if (editIdx === -1) {
-            db.beans.push({ name, roast, flavor, archived: false });
+            db.beans.push({ name, roast, flavorType, flavor, archived: false });
         } else {
             db.beans[editIdx].name = name;
             db.beans[editIdx].roast = roast;
+            db.beans[editIdx].flavorType = flavorType;
             db.beans[editIdx].flavor = flavor;
         }
 
@@ -597,6 +681,7 @@
         const b = db.beans[idx];
         document.getElementById('mgr-name').value = b.name;
         document.getElementById('mgr-roast').value = b.roast;
+        document.getElementById('mgr-flavor-type').value = b.flavorType || 'Fruity';
         document.getElementById('mgr-flavor').value = b.flavor || '';
         document.getElementById('mgr-edit-index').value = idx;
         document.getElementById('bean-form-title').textContent = 'Edit Bean Profile';
@@ -618,16 +703,79 @@
         renderBeanManager();
     }
 
-    // Manual Checkpoint Stopwatch Logic
+    // Coffee Taster Profile Dashboard Analytics
+    function renderTasterProfile() {
+        const container = document.getElementById('taster-profile-content');
+        if (db.sessions.length === 0) {
+            container.innerHTML = '<p style="font-size: 0.85rem; color: var(--text-muted);">No completed brews recorded yet. Log some cups with scores to generate your analytical taster profile!</p>';
+            return;
+        }
+
+        // Aggregate stats from sessions & associated beans
+        const roastCounts = {};
+        const countryCounts = {};
+        const noteCounts = {};
+
+        db.sessions.forEach(s => {
+            const matchingBean = db.beans.find(b => b.name === s.beanName) || {};
+            const roast = matchingBean.roast || 'Light';
+            roastCounts[roast] = (roastCounts[roast] || 0) + 1;
+
+            // Extract country name inside parentheses if provided (e.g. "Kenya Nyeri Hill (Kenya)")
+            const nameStr = s.beanName || '';
+            const match = nameStr.match(/\(([^)]+)\)/);
+            const country = match ? match[1].trim() : 'Global Blend / Unspecified';
+            countryCounts[country] = (countryCounts[country] || 0) + 1;
+
+            // Process tasting notes separated by commas
+            if (s.notes) {
+                s.notes.split(',').forEach(n => {
+                    const cleanNote = n.trim().toLowerCase();
+                    if (cleanNote) {
+                        noteCounts[cleanNote] = (noteCounts[cleanNote] || 0) + 1;
+                    }
+                });
+            }
+        });
+
+        // Determine favorites
+        const favRoast = Object.keys(roastCounts).reduce((a, b) => roastCounts[a] > roastCounts[b] ? a : b, 'None');
+        const favCountry = Object.keys(countryCounts).reduce((a, b) => countryCounts[a] > countryCounts[b] ? a : b, 'None');
+
+        // Rank top 3 tasting notes
+        const sortedNotes = Object.keys(noteCounts).sort((a, b) => noteCounts[b] - noteCounts[a]);
+        const top3Notes = sortedNotes.slice(0, 3);
+
+        container.innerHTML = `
+            <div class="profile-stat-box">
+                <h3>☕ Favorite Roast Style</h3>
+                <p><strong>${favRoast}</strong> (Logged across your top sessions)</p>
+            </div>
+            <div class="profile-stat-box">
+                <h3>🌍 Favorite Origin Country</h3>
+                <p><strong>${favCountry}</strong></p>
+            </div>
+            <div class="profile-stat-box">
+                <h3>🏆 Top 3 Ranked Tasting Notes</h3>
+                ${top3Notes.length > 0 ? `
+                    <ol class="ranked-list">
+                        ${top3Notes.map(n => `<li><strong>${n.charAt(0).toUpperCase() + n.slice(1)}</strong> (${noteCounts[n]} occurrences)</li>`).join('')}
+                    </ol>
+                ` : '<p style="font-size:0.8rem; color:var(--text-muted);">No specific comma tasting notes recorded yet.</p>'}
+            </div>
+        `;
+    }
+
+    // Stopwatch & Brew Logic
     function initStopwatchSession() {
         const beanVal = document.getElementById('bean-select').value;
         if (beanVal === 'new') {
             const name = document.getElementById('bean-name').value.trim() || 'Custom Bean';
             const roast = document.getElementById('bean-roast').value;
+            const flavorType = document.getElementById('bean-flavor-type').value;
             const flavor = document.getElementById('bean-flavor').value.trim();
             
-            // Save newly created bean directly to inventory
-            db.beans.push({ name, roast, flavor, archived: false });
+            db.beans.push({ name, roast, flavorType, flavor, archived: false });
             activeBrew.beanName = name;
             activeBrew.roast = roast;
             activeBrew.flavor = flavor;
@@ -646,7 +794,6 @@
         activeBrew.bloom = document.getElementById('param-bloom').value;
         activeBrew.pours = parseInt(document.getElementById('param-pours').value) || 3;
 
-        // Build sequential phases array
         brewPhases = [];
         let colorIdx = 0;
 
@@ -761,35 +908,32 @@
         container.innerHTML = html;
     }
 
-    // Analytics & Improvement Suggestions Engine
     function generateAnalyticsSuggestions() {
         let suggestionsHTML = '';
-        
         const bloomPhase = brewPhases.find(p => p.name === 'Bloom');
         const bloomDur = bloomPhase ? bloomPhase.duration : 0;
         const drawdownPhase = brewPhases.find(p => p.name === 'Final Drawdown');
         const drawdownDur = drawdownPhase ? drawdownPhase.duration : 0;
 
         if (bloomDur > 45) {
-            suggestionsHTML += `<div class="suggestion-card">⏱️ <strong>Bloom Duration (${bloomDur}s):</strong> Your bloom phase ran quite long (>45s). Consider shortening the bloom to 30-35 seconds next time to minimize harsh over-extraction notes.</div>`;
+            suggestionsHTML += `<div class="suggestion-card">⏱️ <strong>Bloom Duration (${bloomDur}s):</strong> Your bloom phase ran quite long (>45s). Consider shortening the bloom to 30-35 seconds next time.</div>`;
         } else if (bloomDur > 0 && bloomDur < 25) {
-            suggestionsHTML += `<div class="suggestion-card">🌱 <strong>Bloom Duration (${bloomDur}s):</strong> Your bloom was quick (<25s). Try extending it slightly to allow complete CO2 release before your primary pours.</div>`;
+            suggestionsHTML += `<div class="suggestion-card">🌱 <strong>Bloom Duration (${bloomDur}s):</strong> Your bloom was quick (<25s). Try extending it slightly.</div>`;
         }
 
         if (drawdownDur > 90) {
-            suggestionsHTML += `<div class="suggestion-card">💧 <strong>Drawdown Slow (${drawdownDur}s):</strong> Final drawdown took over 1.5 minutes. Your grind size setting (${activeBrew.grind} clicks) might be too fine, causing stalling. Try a coarser click setting next session.</div>`;
+            suggestionsHTML += `<div class="suggestion-card">💧 <strong>Drawdown Slow (${drawdownDur}s):</strong> Final drawdown took over 1.5 minutes. Try a coarser grind setting.</div>`;
         } else if (drawdownDur > 0 && drawdownDur < 35) {
-            suggestionsHTML += `<div class="suggestion-card">⚡ <strong>Drawdown Fast (${drawdownDur}s):</strong> Water drained very rapidly. Consider tightening your grind by 2-3 clicks to increase extraction body.</div>`;
+            suggestionsHTML += `<div class="suggestion-card">⚡ <strong>Drawdown Fast (${drawdownDur}s):</strong> Water drained very rapidly. Tighten your grind by 2-3 clicks.</div>`;
         }
 
         if (!suggestionsHTML) {
-            suggestionsHTML = `<div class="suggestion-card">✨ <strong>Great Timing Profile!</strong> Your phase distribution ratios landed well within balanced parameters. Keep these exact dial-in metrics for your next session.</div>`;
+            suggestionsHTML = `<div class="suggestion-card">✨ <strong>Great Timing Profile!</strong> Your phase distribution ratios landed well within balanced parameters.</div>`;
         }
 
         document.getElementById('analytics-suggestions-box').innerHTML = suggestionsHTML;
     }
 
-    // Saving & History Archiving
     function saveBrewSession() {
         activeBrew.score = document.getElementById('cup-score').value;
         activeBrew.notes = document.getElementById('cup-notes').value;
@@ -818,7 +962,7 @@
                         <span>Score: <strong>${s.score}/10</strong></span>
                     </div>
                     <div style="color:var(--text-muted); font-size:0.8rem; margin-bottom:6px;">
-                        Grind: ${s.grind} clicks | Temp: ${s.temp}°C | Dose: ${s.coffee}g / Water: ${s.water}g | Total: ${s.totalTime}s (${s.date})
+                        Grind: ${s.grind} | Temp: ${s.temp}°C | Water: ${s.water}g | Total: ${s.totalTime}s (${s.date})
                     </div>
                     <div style="font-style:italic; font-size:0.8rem;">"${s.notes || 'No notes added'}"</div>
                 </div>
@@ -827,7 +971,6 @@
         container.innerHTML = html;
     }
 
-    // Initialize dropdown on load
     updateBeanSelectDropdown();
 </script>
 
