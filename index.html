@@ -49,7 +49,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 16px;
+            margin-bottom: 20px;
             border-bottom: 1px solid var(--border-color);
             padding-bottom: 12px;
         }
@@ -75,13 +75,6 @@
 
         .nav-links a:hover, .nav-links a.active {
             color: var(--accent);
-        }
-
-        .subtitle {
-            font-size: 0.85rem;
-            color: var(--text-muted);
-            text-align: center;
-            margin-bottom: 20px;
         }
 
         .step-panel {
@@ -383,7 +376,6 @@
             <a id="nav-history" onclick="attemptNav(4)">History</a>
         </div>
     </div>
-    <div class="subtitle" id="top-subtitle">Log, Time, and Refine Your Brews</div>
 
     <!-- STEP 1: BREW PARAMETERS -->
     <div id="step-1" class="step-panel active">
@@ -397,7 +389,7 @@
 
         <div id="new-bean-section" style="display: none; background: #faf8f5; padding: 12px; border-radius: 8px; margin-bottom: 16px; border: 1px solid var(--border-color);">
             <div class="form-group">
-                <label>Bean Name (e.g. Yirgacheffe)</label>
+                <label>Name (e.g. Yirgacheffe)</label>
                 <input type="text" id="bean-name" placeholder="e.g. Yirgacheffe">
             </div>
             <div class="row">
@@ -705,6 +697,7 @@
 
     function editBean(id) {
         const b = db.beans.find(x => x.id === id);
+        if (!b) return;
         document.getElementById('mgr-name').value = b.name;
         document.getElementById('mgr-origin').value = b.origin || '';
         document.getElementById('mgr-roastery').value = b.roastery || '';
@@ -712,8 +705,10 @@
         document.getElementById('mgr-flavor-type').value = b.flavorType || 'Fruity';
         document.getElementById('mgr-flavor').value = b.flavor || '';
         document.getElementById('mgr-edit-id').value = id;
-        document.getElementById('mgr-save-btn').textContent = 'Update';
+        document.getElementById('mgr-form-title').textContent = 'Edit Bean Profile';
+        document.getElementById('mgr-save-btn').textContent = 'Update Bean Profile';
         document.getElementById('mgr-cancel-btn').style.display = 'block';
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
     function resetBeanManagerForm() {
@@ -722,15 +717,18 @@
         document.getElementById('mgr-roastery').value = '';
         document.getElementById('mgr-flavor').value = '';
         document.getElementById('mgr-edit-id').value = '';
+        document.getElementById('mgr-form-title').textContent = 'Add New Bean Inventory';
         document.getElementById('mgr-save-btn').textContent = 'Save Bean Profile';
         document.getElementById('mgr-cancel-btn').style.display = 'none';
     }
 
     function toggleArchiveBean(id) {
         const b = db.beans.find(x => x.id === id);
-        b.archived = !b.archived;
-        persistData();
-        renderBeanManager();
+        if (b) {
+            b.archived = !b.archived;
+            persistData();
+            renderBeanManager();
+        }
     }
 
     function initStopwatchSession() {
@@ -916,15 +914,15 @@
 
         document.getElementById('taster-profile-content').innerHTML = `
             <div class="profile-stat-box">
-                <h3>🌍 Favourite Origin Country</h3>
+                <h3>Favourite Origin Country</h3>
                 <p><strong>${favCountry}</strong></p>
             </div>
             <div class="profile-stat-box">
-                <h3>🔥 Favourite Roast</h3>
+                <h3>Favourite Roast</h3>
                 <p><strong>${favRoast}</strong></p>
             </div>
             <div class="profile-stat-box">
-                <h3>🏆 Top 3 Ranked Tasting Notes</h3>
+                <h3>Top 3 Ranked Tasting Notes</h3>
                 <ol class="ranked-list">
                     ${sortedNotes.length > 0 ? sortedNotes.map(n => `<li><strong>${n}</strong></li>`).join('') : '<p style="font-size:0.8rem; color:var(--text-muted);">No bean tasting notes recorded yet.</p>'}
                 </ol>
