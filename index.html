@@ -1,0 +1,1139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BrewLog — Specialty Coffee Journal & Optimizer</title>
+    <style>
+        :root {
+            --bg-color: #F7F5F0;
+            --card-bg: #FFFFFF;
+            --text-main: #2C2825;
+            --text-muted: #78716C;
+            --accent-beige: #D4C5B9;
+            --accent-olive: #606C38;
+            --accent-terracotta: #BC6C25;
+            --border-color: #E6E2DD;
+            --radius: 16px;
+            --transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            color: var(--text-main);
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 2rem 1rem;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 600px;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        /* Header & Navigation */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem 0;
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+        }
+
+        nav {
+            display: flex;
+            gap: 0.5rem;
+            background: var(--card-bg);
+            padding: 0.35rem;
+            border-radius: 99px;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+        }
+
+        .nav-btn {
+            background: transparent;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 99px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            color: var(--text-muted);
+            transition: var(--transition);
+        }
+
+        .nav-btn.active {
+            background: var(--text-main);
+            color: var(--bg-color);
+        }
+
+        /* Views */
+        .view {
+            display: none;
+            flex-direction: column;
+            gap: 1.25rem;
+            animation: fadeIn 0.4s ease forwards;
+        }
+
+        .view.active {
+            display: flex;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Dashboard Hero Elements */
+        .hero-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .widget-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius);
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            cursor: pointer;
+            transition: var(--transition);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .widget-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.04);
+            border-color: var(--accent-beige);
+        }
+
+        .widget-icon {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .widget-title {
+            font-size: 1rem;
+            font-weight: 600;
+        }
+
+        .widget-sub {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-top: 0.25rem;
+        }
+
+        /* Tooltip hint */
+        .widget-card::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: 6px;
+            font-size: 0.65rem;
+            color: var(--accent-terracotta);
+            opacity: 0.8;
+        }
+
+        /* Cards & Containers */
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius);
+            padding: 1.5rem;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.01);
+        }
+
+        /* Form Controls */
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+            margin-bottom: 1rem;
+        }
+
+        label {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-main);
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border-radius: 10px;
+            border: 1px solid var(--border-color);
+            background: var(--bg-color);
+            font-size: 0.95rem;
+            color: var(--text-main);
+            transition: var(--transition);
+        }
+
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: var(--text-main);
+            background: var(--card-bg);
+        }
+
+        .row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .btn {
+            background: var(--text-main);
+            color: var(--bg-color);
+            border: none;
+            padding: 0.85rem 1.5rem;
+            border-radius: 12px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            width: 100%;
+            text-align: center;
+        }
+
+        .btn:hover {
+            opacity: 0.9;
+            transform: scale(0.99);
+        }
+
+        .btn-secondary {
+            background: var(--accent-beige);
+            color: var(--text-main);
+        }
+
+        /* Multi-step Flow Container */
+        .step-container {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .step-hidden {
+            display: none !important;
+        }
+
+        /* Timer & Fitness Ring UI */
+        .timer-view {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 2rem;
+            padding: 2rem 0;
+        }
+
+        .ring-container {
+            position: relative;
+            width: 260px;
+            height: 260px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .ring-svg {
+            transform: rotate(-90deg);
+            width: 100%;
+            height: 100%;
+        }
+
+        .ring-bg {
+            fill: none;
+            stroke: var(--border-color);
+            stroke-width: 16;
+        }
+
+        .ring-progress {
+            fill: none;
+            stroke-width: 16;
+            stroke-linecap: round;
+            transition: stroke-dashoffset 0.1s linear, stroke 0.3s ease;
+        }
+
+        .timer-center-btn {
+            position: absolute;
+            width: 180px;
+            height: 180px;
+            border-radius: 50%;
+            background: var(--card-bg);
+            border: 4px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.06);
+            transition: var(--transition);
+        }
+
+        .timer-center-btn:hover {
+            transform: scale(1.02);
+            border-color: var(--accent-olive);
+        }
+
+        .timer-state-label {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+
+        .timer-display {
+            font-size: 2.25rem;
+            font-weight: 700;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .timer-status-text {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--accent-terracotta);
+            text-align: center;
+        }
+
+        /* Calendar View */
+        .calendar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 6px;
+        }
+
+        .cal-day-header {
+            text-align: center;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            padding: 0.5rem 0;
+        }
+
+        .cal-cell {
+            aspect-ratio: 1;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: var(--transition);
+            position: relative;
+        }
+
+        .cal-cell:hover {
+            border-color: var(--text-main);
+        }
+
+        .cal-cell.has-brew::after {
+            content: '';
+            width: 6px;
+            height: 6px;
+            background-color: var(--accent-olive);
+            border-radius: 50%;
+            margin-top: 2px;
+        }
+
+        .cal-cell.empty {
+            background: transparent;
+            border: none;
+            cursor: default;
+        }
+
+        /* Modal Overlay */
+        .modal-backdrop {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0,0,0,0.4);
+            backdrop-filter: blur(4px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 1rem;
+        }
+
+        .modal-backdrop.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            width: 100%;
+            max-width: 480px;
+            max-height: 80vh;
+            overflow-y: auto;
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            box-shadow: 0 16px 32px rgba(0,0,0,0.12);
+            animation: scaleUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        @keyframes scaleUp {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        .modal-close {
+            align-self: flex-end;
+            background: transparent;
+            border: none;
+            font-size: 1.25rem;
+            cursor: pointer;
+            color: var(--text-muted);
+        }
+
+        /* Coffee Card Item */
+        .coffee-card-item {
+            background: var(--bg-color);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.25rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .coffee-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+
+        .coffee-card-bean {
+            font-weight: 700;
+            font-size: 1rem;
+        }
+
+        .coffee-card-score {
+            background: var(--accent-olive);
+            color: #fff;
+            padding: 0.25rem 0.6rem;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 700;
+        }
+
+        .coffee-card-meta {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.5rem;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        .coffee-card-notes {
+            font-size: 0.85rem;
+            font-style: italic;
+            border-left: 2px solid var(--accent-beige);
+            padding-left: 0.5rem;
+            color: var(--text-main);
+        }
+
+        /* Stats & Optimizer View */
+        .stats-section {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .optimizer-box {
+            background: var(--accent-beige);
+            border-radius: 12px;
+            padding: 1.25rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .optimizer-title {
+            font-weight: 700;
+            font-size: 0.95rem;
+            color: var(--text-main);
+        }
+
+        .optimizer-text {
+            font-size: 0.85rem;
+            line-height: 1.4;
+            color: var(--text-main);
+        }
+
+        /* Stack visual */
+        .stack-preview {
+            width: 100%;
+            height: 120px;
+            background: linear-gradient(135deg, var(--accent-beige), var(--border-color));
+            border-radius: var(--radius);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.04);
+            transition: var(--transition);
+        }
+
+        .stack-preview:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+        }
+
+        .stack-preview-content {
+            text-align: center;
+        }
+
+        .stack-preview-content h3 {
+            font-size: 1.1rem;
+            font-weight: 700;
+        }
+
+        .stack-preview-content p {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <!-- Header -->
+        <header>
+            <h1>BrewLog</h1>
+            <nav>
+                <button class="nav-btn active" onclick="switchTab('dashboard')">Home</button>
+                <button class="nav-btn" onclick="switchTab('log')">New Cup</button>
+                <button class="nav-btn" onclick="switchTab('stats')">Analytics</button>
+            </nav>
+        </header>
+
+        <!-- DASHBOARD VIEW -->
+        <section id="view-dashboard" class="view active">
+            <div class="hero-grid">
+                <div class="widget-card" onclick="openProfileModal()" data-tooltip="Click to see your perfect brew">
+                    <div class="widget-icon">☕</div>
+                    <div class="widget-title">Taster Profile</div>
+                    <div class="widget-sub" id="profile-snippet">Click to inspect profile</div>
+                </div>
+                <div class="widget-card" onclick="openCalendarModal()" data-tooltip="See past brews">
+                    <div class="widget-icon">📅</div>
+                    <div class="widget-title">Brew Calendar</div>
+                    <div class="widget-sub" id="calendar-snippet">View history stack</div>
+                </div>
+            </div>
+
+            <div class="card stack-preview" onclick="openCalendarModal()">
+                <div class="stack-preview-content">
+                    <h3>Recent Brews Stack</h3>
+                    <p id="total-brews-count">0 cups logged in total</p>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3 style="font-size: 1rem; margin-bottom: 0.75rem;">Quick Stats & Tips</h3>
+                <div id="dashboard-optimizer" class="optimizer-text">
+                    Log your first coffee to unlock personalized optimization suggestions!
+                </div>
+            </div>
+        </section>
+
+        <!-- NEW CUP LOG VIEW -->
+        <section id="view-log" class="view">
+            <div class="card">
+                <h2 style="font-size: 1.2rem; margin-bottom: 1rem;" id="log-form-title">Log New Brew</h2>
+                
+                <!-- Step 1: Bean Selection -->
+                <div id="step-beans" class="step-container">
+                    <div class="form-group">
+                        <label>Select Existing Bean or Add New</label>
+                        <select id="bean-select" onchange="handleBeanSelectChange()">
+                            <option value="new">+ Add New Bean</option>
+                        </select>
+                    </div>
+
+                    <div id="new-bean-fields" style="display: flex; flex-direction: column; gap: 1rem;">
+                        <div class="form-group">
+                            <label>Bean Name & Origin</label>
+                            <input type="text" id="bean-name" placeholder="e.g. Ethiopia Yirgacheffe (Roastery X)">
+                        </div>
+                        <div class="row">
+                            <div class="form-group">
+                                <label>Roast Level</label>
+                                <select id="bean-roast">
+                                    <option value="Light">Light</option>
+                                    <option value="Medium-Light">Medium-Light</option>
+                                    <option value="Medium" selected>Medium</option>
+                                    <option value="Medium-Dark">Medium-Dark</option>
+                                    <option value="Dark">Dark</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Flavor Profile Tags</label>
+                                <input type="text" id="bean-flavor" placeholder="e.g. Jasmine, Bergamot, Peach">
+                            </div>
+                        </div>
+                    </div>
+
+                    <button class="btn" onclick="goToStep(2)">Next: Grind & Ratio</button>
+                </div>
+
+                <!-- Step 2: Grind, Ratio & Temp -->
+                <div id="step-params" class="step-container step-hidden">
+                    <div class="row">
+                        <div class="form-group">
+                            <label>Grind Size (Clicks)</label>
+                            <input type="number" id="param-grind" placeholder="e.g. 21" value="20">
+                        </div>
+                        <div class="form-group">
+                            <label>Water Temp (°C)</label>
+                            <input type="number" id="param-temp" placeholder="e.g. 92" value="92">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="form-group">
+                            <label>Coffee Weight (g)</label>
+                            <input type="number" id="param-coffee" placeholder="15" value="15">
+                        </div>
+                        <div class="form-group">
+                            <label>Water Weight (g)</label>
+                            <input type="number" id="param-water" placeholder="300" value="250">
+                        </div>
+                    </div>
+                    
+                    <hr style="border: none; border-top: 1px solid var(--border-color); margin: 0.5rem 0;">
+
+                    <div class="row">
+                        <div class="form-group">
+                            <label>Include Bloom Phase?</label>
+                            <select id="param-bloom">
+                                <option value="yes" selected>Yes (30s bloom)</option>
+                                <option value="no">No</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Number of Pours</label>
+                            <input type="number" id="param-pours" min="1" max="5" value="2">
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 0.5rem;">
+                        <button class="btn btn-secondary" onclick="goToStep(1)">Back</button>
+                        <button class="btn" onclick="startTimerSession()">Start Brew Timer</button>
+                    </div>
+                </div>
+
+                <!-- Step 3: Timer & Fitness Ring -->
+                <div id="step-timer" class="step-container step-hidden">
+                    <div class="timer-view">
+                        <div class="timer-status-text" id="timer-status-instruction">Ready to Bloom</div>
+                        
+                        <div class="ring-container">
+                            <svg class="ring-svg" viewBox="0 0 100 100">
+                                <circle class="ring-bg" cx="50" cy="50" r="42"></circle>
+                                <circle class="ring-progress" id="ring-progress-bar" cx="50" cy="50" r="42" stroke-dasharray="264" stroke-dashoffset="264"></circle>
+                            </svg>
+                            <button class="timer-center-btn" onclick="handleTimerButtonPress()">
+                                <span class="timer-state-label" id="timer-action-label">Tap to Start</span>
+                                <span class="timer-display" id="timer-clock">0:00</span>
+                            </button>
+                        </div>
+
+                        <div style="font-size: 0.8rem; color: var(--text-muted); text-align: center;" id="timer-phase-counter">
+                            Phase 0 of 0
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 4: Rating & Notes -->
+                <div id="step-complete" class="step-container step-hidden">
+                    <div class="form-group">
+                        <label>Rank Cup (Out of 10)</label>
+                        <input type="number" id="complete-rank" min="1" max="10" value="8" step="0.5">
+                    </div>
+                    <div class="form-group">
+                        <label>Tasting Notes & Reflections</label>
+                        <textarea id="complete-notes" rows="3" placeholder="Clean cup, balanced acidity, sweet finish..."></textarea>
+                    </div>
+                    <button class="btn" onclick="saveBrewCard()">Save Brew Card</button>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ANALYTICS VIEW -->
+        <section id="view-stats" class="view">
+            <div class="card">
+                <h2 style="font-size: 1.2rem; margin-bottom: 1rem;">Bean Groupings & Optimization</h2>
+                <div id="bean-stats-container" style="display: flex; flex-direction: column; gap: 1rem;">
+                    <p style="color: var(--text-muted); font-size: 0.9rem;">No data recorded yet. Log your first cup to view optimizations.</p>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- MODAL: Taster Profile -->
+    <div class="modal-backdrop" id="modal-profile">
+        <div class="modal-content">
+            <button class="modal-close" onclick="closeModals()">×</button>
+            <h2 style="font-size: 1.25rem;">Coffee Taster Profile</h2>
+            <div id="profile-modal-body" style="display: flex; flex-direction: column; gap: 1rem; font-size: 0.95rem; line-height: 1.5;">
+                <p>Loading profile...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: Calendar Stack -->
+    <div class="modal-backdrop" id="modal-calendar">
+        <div class="modal-content">
+            <button class="modal-close" onclick="closeModals()">×</button>
+            <div class="calendar-header">
+                <h2 style="font-size: 1.25rem;" id="calendar-month-title">Brew Calendar</h2>
+            </div>
+            <div class="calendar-grid" id="calendar-grid-container">
+                <!-- Generated via JS -->
+            </div>
+            <div id="calendar-day-cards" style="margin-top: 1rem; display: flex; flex-direction: column; gap: 0.75rem;">
+                <!-- Cards for selected date will pop up here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // State management & LocalStorage
+        let db = JSON.parse(localStorage.getItem('brewlog_db')) || {
+            beans: [],
+            brews: []
+        };
+
+        // Active brewing session temporary storage
+        let activeBrew = {
+            beanId: null,
+            beanName: '',
+            roast: 'Medium',
+            flavor: '',
+            grind: 20,
+            temp: 92,
+            coffee: 15,
+            water: 250,
+            bloom: 'yes',
+            poursCount: 2,
+            phases: [],
+            currentPhaseIdx: 0,
+            totalTime: 0
+        };
+
+        let timerInterval = null;
+        let phaseTimerSeconds = 0;
+        let totalTimerSeconds = 0;
+        let isTimerRunning = false;
+
+        // Navigation
+        function switchTab(tabId) {
+            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+            
+            document.getElementById(`view-${tabId}`).classList.add('active');
+            event.target.classList.add('active');
+
+            if (tabId === 'log') {
+                populateBeanDropdown();
+            }
+            if (tabId === 'stats') {
+                renderAnalytics();
+            }
+        }
+
+        // Dropdown handling
+        function populateBeanDropdown() {
+            const select = document.getElementById('bean-select');
+            select.innerHTML = '<option value="new">+ Add New Bean</option>';
+            db.beans.forEach((b, idx) => {
+                const opt = document.createElement('option');
+                opt.value = idx;
+                opt.textContent = b.name;
+                select.appendChild(opt);
+            });
+            handleBeanSelectChange();
+        }
+
+        function handleBeanSelectChange() {
+            const val = document.getElementById('bean-select').value;
+            const newFields = document.getElementById('new-bean-fields');
+            if (val === 'new') {
+                newFields.style.display = 'flex';
+            } else {
+                newFields.style.display = 'none';
+            }
+        }
+
+        function goToStep(stepNum) {
+            document.getElementById('step-beans').classList.add('step-hidden');
+            document.getElementById('step-params').classList.add('step-hidden');
+            document.getElementById('step-timer').classList.add('step-hidden');
+            document.getElementById('step-complete').classList.add('step-hidden');
+
+            if (stepNum === 1) document.getElementById('step-beans').classList.remove('step-hidden');
+            if (stepNum === 2) {
+                // Validate bean selection
+                const beanVal = document.getElementById('bean-select').value;
+                if (beanVal === 'new') {
+                    const name = document.getElementById('bean-name').value.trim();
+                    if (!name) {
+                        alert('Please enter a bean name.');
+                        goToStep(1);
+                        return;
+                    }
+                }
+                document.getElementById('step-params').classList.remove('step-hidden');
+            }
+        }
+
+        // Timer & Recipe Structure Setup
+        function startTimerSession() {
+            // Gather inputs
+            const beanVal = document.getElementById('bean-select').value;
+            if (beanVal === 'new') {
+                activeBrew.beanName = document.getElementById('bean-name').value.trim();
+                activeBrew.roast = document.getElementById('bean-roast').value;
+                activeBrew.flavor = document.getElementById('bean-flavor').value.trim();
+            } else {
+                const b = db.beans[beanVal];
+                activeBrew.beanName = b.name;
+                activeBrew.roast = b.roast;
+                activeBrew.flavor = b.flavor;
+            }
+
+            activeBrew.grind = parseFloat(document.getElementById('param-grind').value) || 20;
+            activeBrew.temp = parseFloat(document.getElementById('param-temp').value) || 92;
+            activeBrew.coffee = parseFloat(document.getElementById('param-coffee').value) || 15;
+            activeBrew.water = parseFloat(document.getElementById('param-water').value) || 250;
+            activeBrew.bloom = document.getElementById('param-bloom').value;
+            activeBrew.poursCount = parseInt(document.getElementById('param-pours').value) || 2;
+
+            // Build phases
+            activeBrew.phases = [];
+            if (activeBrew.bloom === 'yes') {
+                activeBrew.phases.push({ name: 'Bloom', duration: 30, color: 'var(--accent-beige)' });
+            }
+            for (let i = 1; i <= activeBrew.poursCount; i++) {
+                activeBrew.phases.push({ name: `Pour ${i}`, duration: 15, color: 'var(--accent-terracotta)' });
+                activeBrew.phases.push({ name: `Drawdown ${i}`, duration: 45, color: 'var(--accent-olive)' });
+            }
+
+            activeBrew.currentPhaseIdx = 0;
+            totalTimerSeconds = 0;
+            phaseTimerSeconds = 0;
+
+            document.getElementById('step-params').classList.add('step-hidden');
+            document.getElementById('step-timer').classList.remove('step-hidden');
+
+            updateTimerUI();
+        }
+
+        function updateTimerUI() {
+            const phase = activeBrew.phases[activeBrew.currentPhaseIdx];
+            document.getElementById('timer-status-instruction').textContent = phase.name;
+            document.getElementById('timer-phase-counter').textContent = `Phase ${activeBrew.currentPhaseIdx + 1} of ${activeBrew.phases.length}`;
+            document.getElementById('timer-action-label').textContent = isTimerRunning ? 'Pause / Next' : 'Tap to Start';
+            
+            const mins = Math.floor(totalTimerSeconds / 60);
+            const secs = totalTimerSeconds % 60;
+            document.getElementById('timer-clock').textContent = `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+
+            // Ring progress update
+            const ringProg = document.getElementById('ring-progress-bar');
+            ringProg.style.stroke = phase.color;
+            const progressRatio = Math.min(phaseTimerSeconds / phase.duration, 1);
+            const dashoffset = 264 - (264 * progressRatio);
+            ringProg.style.strokeDashoffset = dashoffset;
+        }
+
+        function handleTimerButtonPress() {
+            if (!isTimerRunning) {
+                isTimerRunning = true;
+                timerInterval = setInterval(() => {
+                    totalTimerSeconds++;
+                    phaseTimerSeconds++;
+                    
+                    const phase = activeBrew.phases[activeBrew.currentPhaseIdx];
+                    // Automatic transition if phase duration met
+                    if (phaseTimerSeconds >= phase.duration) {
+                        advanceTimerPhase();
+                    }
+                    updateTimerUI();
+                }, 1000);
+            } else {
+                // Manual lap / advance to next phase
+                advanceTimerPhase();
+            }
+            updateTimerUI();
+        }
+
+        function advanceTimerPhase() {
+            phaseTimerSeconds = 0;
+            activeBrew.currentPhaseIdx++;
+            if (activeBrew.currentPhaseIdx >= activeBrew.phases.length) {
+                // End of timer sequence
+                clearInterval(timerInterval);
+                isTimerRunning = false;
+                
+                // Transition to rating step
+                document.getElementById('step-timer').classList.add('step-hidden');
+                document.getElementById('step-complete').classList.remove('step-hidden');
+            }
+        }
+
+        function saveBrewCard() {
+            const rank = parseFloat(document.getElementById('complete-rank').value) || 8;
+            const notes = document.getElementById('complete-notes').value.trim();
+
+            const newBrew = {
+                id: Date.now(),
+                date: new Date().toISOString().split('T')[0],
+                beanName: activeBrew.beanName,
+                roast: activeBrew.roast,
+                flavor: activeBrew.flavor,
+                grind: activeBrew.grind,
+                temp: activeBrew.temp,
+                coffee: activeBrew.coffee,
+                water: activeBrew.water,
+                totalTime: totalTimerSeconds,
+                rank: rank,
+                notes: notes
+            };
+
+            // Save bean if new
+            let existingBean = db.beans.find(b => b.name.toLowerCase() === activeBrew.beanName.toLowerCase());
+            if (!existingBean) {
+                db.beans.push({
+                    name: activeBrew.beanName,
+                    roast: activeBrew.roast,
+                    flavor: activeBrew.flavor
+                });
+            }
+
+            db.brews.unshift(newBrew);
+            localStorage.setItem('brewlog_db', JSON.stringify(db));
+
+            // Reset form & return home
+            alert('Brew card successfully saved!');
+            document.getElementById('complete-notes').value = '';
+            updateDashboardMetrics();
+            switchTab('dashboard');
+        }
+
+        // Dashboard & Analytics
+        function updateDashboardMetrics() {
+            document.getElementById('total-brews-count').textContent = `${db.brews.length} cups logged in total`;
+            
+            if (db.brews.length > 0) {
+                // Calculate basic optimizer suggestion
+                const beanMap = {};
+                db.brews.forEach(b => {
+                    if (!beanMap[b.beanName]) beanMap[b.beanName] = [];
+                    beanMap[b.beanName].push(b);
+                });
+
+                let bestBean = '';
+                let highestAvg = 0;
+                for (let bean in beanMap) {
+                    const avg = beanMap[bean].reduce((acc, curr) => acc + curr.rank, 0) / beanMap[bean].length;
+                    if (avg > highestAvg) {
+                        highestAvg = avg;
+                        bestBean = bean;
+                    }
+                }
+                document.getElementById('dashboard-optimizer').innerHTML = `Your top performing bean is <strong>${bestBean}</strong> (avg rating: ${highestAvg.toFixed(1)}/10). Keep track of your grind adjustments to optimize extraction!`;
+            }
+        }
+
+        function renderAnalytics() {
+            const container = document.getElementById('bean-stats-container');
+            if (db.brews.length === 0) {
+                container.innerHTML = `<p style="color: var(--text-muted); font-size: 0.9rem;">No data recorded yet.</p>`;
+                return;
+            }
+
+            // Group by bean
+            const groups = {};
+            db.brews.forEach(b => {
+                if (!groups[b.beanName]) groups[b.beanName] = [];
+                groups[b.beanName].push(b);
+            });
+
+            let html = '';
+            for (let beanName in groups) {
+                const brews = groups[beanName];
+                const avgRank = brews.reduce((sum, c) => sum + c.rank, 0) / brews.length;
+                
+                // Find most common grind size for highest ratings
+                const sortedByRank = [...brews].sort((a,b) => b.rank - a.rank);
+                const optimalGrind = sortedByRank[0].grind;
+
+                html += `
+                    <div class="optimizer-box">
+                        <div class="optimizer-title">${beanName} (${brews.length} cups logged)</div>
+                        <div class="optimizer-text">
+                            Average Rating: <strong>${avgRank.toFixed(1)}/10</strong><br>
+                            💡 <strong>Optimization Suggestion:</strong> Your highest-rated cup used grind size <strong>${optimalGrind}</strong>. Suggest sticking around this setting!
+                        </div>
+                    </div>
+                `;
+            }
+            container.innerHTML = html;
+        }
+
+        // Modals
+        function openProfileModal() {
+            const modal = document.getElementById('modal-profile');
+            const body = document.getElementById('profile-modal-body');
+            
+            if (db.brews.length === 0) {
+                body.innerHTML = `<p>Log some coffee cups to generate your taster profile.</p>`;
+            } else {
+                // Compile profile metrics
+                const roastCounts = {};
+                db.brews.forEach(b => roastCounts[b.roast] = (roastCounts[b.roast] || 0) + 1);
+                let preferredRoast = Object.keys(roastCounts).reduce((a, b) => roastCounts[a] > roastCounts[b] ? a : b);
+
+                const avgGrind = (db.brews.reduce((acc, c) => acc + c.grind, 0) / db.brews.length).toFixed(1);
+
+                body.innerHTML = `
+                    <p>Based on your <strong>${db.brews.length}</strong> recorded brews:</p>
+                    <ul style="padding-left: 1.25rem; display: flex; flex-direction: column; gap: 0.5rem;">
+                        <li><strong>Preferred Roast:</strong> ${preferredRoast} roast profile.</li>
+                        <li><strong>Average Grind Setting:</strong> ${avgGrind} clicks.</li>
+                        <li><strong>Extraction Style:</strong> Consistent multi-pour pour-over workflows.</li>
+                    </ul>
+                `;
+            }
+            modal.classList.add('active');
+        }
+
+        function openCalendarModal() {
+            const modal = document.getElementById('modal-calendar');
+            renderCalendarGrid();
+            modal.classList.add('active');
+        }
+
+        function closeModals() {
+            document.querySelectorAll('.modal-backdrop').forEach(m => m.classList.remove('active'));
+        }
+
+        function renderCalendarGrid() {
+            const grid = document.getElementById('calendar-grid-container');
+            const title = document.getElementById('calendar-month-title');
+            
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = now.getMonth();
+            
+            const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+            title.textContent = `${monthNames[month]} ${year}`;
+
+            const firstDay = new Date(year, month, 1).getDay();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+            let html = `
+                <div class="cal-day-header">Su</div>
+                <div class="cal-day-header">Mo</div>
+                <div class="cal-day-header">Tu</div>
+                <div class="cal-day-header">We</div>
+                <div class="cal-day-header">Th</div>
+                <div class="cal-day-header">Fr</div>
+                <div class="cal-day-header">Sa</div>
+            `;
+
+            for (let i = 0; i < firstDay; i++) {
+                html += `<div class="cal-cell empty"></div>`;
+            }
+
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                const hasBrew = db.brews.some(b => b.date === dateStr);
+                
+                html += `<div class="cal-cell ${hasBrew ? 'has-brew' : ''}" onclick="selectCalendarDate('${dateStr}')">${day}</div>`;
+            }
+
+            grid.innerHTML = html;
+        }
+
+        function selectCalendarDate(dateStr) {
+            const container = document.getElementById('calendar-day-cards');
+            const matchingBrews = db.brews.filter(b => b.date === dateStr);
+
+            if (matchingBrews.length === 0) {
+                container.innerHTML = `<p style="font-size: 0.85rem; color: var(--text-muted); text-align: center;">No brews recorded on ${dateStr}.</p>`;
+                return;
+            }
+
+            let html = `<h4 style="font-size: 0.95rem; margin-bottom: 0.5rem;">Brews on ${dateStr}:</h4>`;
+            matchingBrews.forEach(brew => {
+                html += `
+                    <div class="coffee-card-item">
+                        <div class="coffee-card-header">
+                            <div>
+                                <div class="coffee-card-bean">${brew.beanName}</div>
+                                <div style="font-size: 0.75rem; color: var(--text-muted);">${brew.roast} Roast • ${brew.flavor || 'No flavor tags'}</div>
+                            </div>
+                            <div class="coffee-card-score">${brew.rank}/10</div>
+                        </div>
+                        <div class="coffee-card-meta">
+                            <div>Grind: ${brew.grind} clicks</div>
+                            <div>Ratio: ${brew.coffee}g / ${brew.water}g</div>
+                            <div>Temp: ${brew.temp}°C</div>
+                            <div>Time: ${Math.floor(brew.totalTime / 60)}m ${brew.totalTime % 60}s</div>
+                        </div>
+                        ${brew.notes ? `<div class="coffee-card-notes">"${brew.notes}"</div>` : ''}
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        }
+
+        // Initialize on load
+        window.onload = function() {
+            updateDashboardMetrics();
+        };
+    </script>
+</body>
+</html>
