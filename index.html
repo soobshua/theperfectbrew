@@ -520,7 +520,7 @@
         
         <div style="background: #faf8f5; padding: 12px; border-radius: 8px; margin-bottom: 16px; border: 1px solid var(--border-color);">
             <div class="form-group" style="margin-bottom: 10px;">
-                <label id="bean-form-title">Add New Bean Inventory</label>
+                <label id="mgr-form-title">Add New Bean Inventory</label>
                 <input type="text" id="mgr-name" placeholder="Name (e.g. Yirgacheffe)">
             </div>
             <div class="row" style="margin-bottom: 10px;">
@@ -632,7 +632,7 @@
         select.innerHTML = '<option value="" disabled selected>-- Select a Bean Profile --</option>';
         db.beans.filter(b => !b.archived).forEach((b) => {
             const opt = document.createElement('option');
-            opt.value = b.id;
+            opt.value = b.id || ('b_legacy_' + Math.random()); // fallback value if id missing
             opt.textContent = `${b.name} (${b.origin || 'Unknown Origin'}) - ${b.roast}`;
             select.appendChild(opt);
         });
@@ -658,20 +658,51 @@
         // Sort beans so archived ones are pushed to the bottom
         const sortedBeans = [...db.beans].sort((a, b) => (a.archived === b.archived ? 0 : a.archived ? 1 : -1));
 
-        sortedBeans.forEach((b) => {
+        sortedBeans.forEach((b, index) => {
             const roasteryText = b.roastery ? ` | ${b.roastery}` : '';
+            const hasId = !!b.id;
+            
+            // If it's a legacy bean without an ID, provide a special "Fix & Edit" button
+            let actionButtons = '';
+            if (hasId) {
+                actionButtons = `
+                    <button onclick="editBean('${b.id}')">Edit</button>
+                    <button onclick="toggleArchiveBean('${b.id}')" class="danger">${b.archived ? 'Unarchive' : 'Archive'}</button>
+                `;
+            } else {
+                actionButtons = `
+                    <button onclick="fixAndEditLegacyBean(${index})">Assign ID & Edit</button>
+                    <button onclick="toggleArchiveLegacyBean(${index})" class="danger">${b.archived ? 'Unarchive' : 'Archive'}</button>
+                `;
+            }
+
             container.innerHTML += `
                 <div class="item-card ${b.archived ? 'archived' : ''}">
                     <div class="item-card-header"><strong>${b.name}</strong><span class="badge">${b.roast} - ${b.flavorType || 'Fruity'}</span></div>
                     <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">Origin: ${b.origin || 'Unknown'}${roasteryText}</div>
                     <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">Notes: ${b.flavor || 'None'}</div>
+                    ${!hasId ? '<div style="font-size: 0.75rem; color: #b45309; margin-top: 4px;">⚠️ Legacy bean format (missing ID)</div>' : ''}
                     <div class="card-actions">
-                        <button onclick="editBean('${b.id}')">Edit</button>
-                        <button onclick="toggleArchiveBean('${b.id}')" class="danger">${b.archived ? 'Unarchive' : 'Archive'}</button>
+                        ${actionButtons}
                     </div>
                 </div>
             `;
         });
+    }
+
+    function fixAndEditLegacyBean(arrayIndex) {
+        // Assign a fresh ID to the legacy bean
+        db.beans[arrayIndex].id = 'b_' + Date.now() + '_' + arrayIndex;
+        persistData();
+        // Open it in the edit form
+        editBean(db.beans[arrayIndex].id);
+    }
+
+    function toggleArchiveLegacyBean(arrayIndex) {
+        if (!db.beans[arrayIndex].id) {
+            db.beans[arrayIndex].id = 'b_' + Date.now() + '_' + arrayIndex;
+        }
+        toggleArchiveBean(db.beans[arrayIndex].id);
     }
 
     function saveBeanFromManager() {
@@ -688,7 +719,9 @@
             db.beans.push({ id: 'b_' + Date.now(), name, origin, roastery, roast, flavorType, flavor, archived: false });
         } else {
             const b = db.beans.find(x => x.id === editId);
-            Object.assign(b, { name, origin, roastery, roast, flavorType, flavor });
+            if (b) {
+                Object.assign(b, { name, origin, roastery, roast, flavorType, flavor });
+            }
         }
         persistData();
         resetBeanManagerForm();
@@ -747,11 +780,11 @@
             matchedBean = db.beans.find(x => x.id === val);
         }
         
-        activeBrew.beanName = matchedBean.name;
-        activeBrew.origin = matchedBean.origin || 'Unknown';
-        activeBrew.roastery = matchedBean.roastery || '';
-        activeBrew.roast = matchedBean.roast;
-        activeBrew.flavorType = matchedBean.flavorType || 'Fruity';
+        activeBrew.beanName = matchedBean ? matchedBean.name : 'Unknown';
+        activeBrew.origin = matchedBean && matchedBean.origin ? matchedBean.origin : 'Unknown';
+        activeBrew.roastery = matchedBean && matchedBean.roastery ? matchedBean.roastery : '';
+        activeBrew.roast = matchedBean ? matchedBean.roast : 'Medium';
+        activeBrew.flavorType = matchedBean && matchedBean.flavorType ? matchedBean.flavorType : 'Fruity';
         activeBrew.grind = document.getElementById('param-grind').value;
         activeBrew.temp = document.getElementById('param-temp').value;
         activeBrew.coffee = document.getElementById('param-coffee').value;
