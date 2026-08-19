@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BrewLog — Specialty Coffee Journal & Optimizer</title>
+    <title>BrewLog — Specialty Coffee Journal</title>
     <style>
         :root {
             --bg-color: #F7F5F0;
@@ -260,17 +260,18 @@
             color: var(--text-main);
         }
 
-        .btn-danger {
-            background: transparent;
-            color: var(--accent-danger);
-            border: 1px solid var(--accent-danger);
+        .btn-small {
             padding: 0.4rem 0.75rem;
             border-radius: 8px;
             font-size: 0.75rem;
             font-weight: 600;
-            cursor: pointer;
-            transition: var(--transition);
             width: auto;
+        }
+
+        .btn-danger {
+            background: transparent;
+            color: var(--accent-danger);
+            border: 1px solid var(--accent-danger);
         }
 
         .btn-danger:hover {
@@ -295,14 +296,14 @@
             display: none !important;
         }
 
-        /* Continuous Snake Timer UI */
+        /* Continuous Stopwatch Timer UI */
         .timer-view {
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            gap: 1.5rem;
-            padding: 1rem 0;
+            gap: 1.25rem;
+            padding: 0.5rem 0;
         }
 
         .ring-container {
@@ -318,25 +319,33 @@
             transform: rotate(-90deg);
             width: 100%;
             height: 100%;
+            overflow: visible;
         }
 
         .ring-bg {
             fill: none;
             stroke: var(--border-color);
-            stroke-width: 16;
+            stroke-width: 14;
         }
 
-        .ring-segment {
+        .ring-progress {
             fill: none;
-            stroke-width: 16;
+            stroke: var(--accent-terracotta);
+            stroke-width: 14;
             stroke-linecap: round;
-            transition: stroke-dasharray 0.3s linear, stroke-dashoffset 0.3s linear;
+            transition: stroke-dasharray 0.2s linear, stroke-dashoffset 0.2s linear;
+        }
+
+        .lap-tick {
+            stroke: var(--text-main);
+            stroke-width: 3;
+            stroke-linecap: round;
         }
 
         .timer-center-btn {
             position: absolute;
-            width: 180px;
-            height: 180px;
+            width: 175px;
+            height: 175px;
             border-radius: 50%;
             background: var(--card-bg);
             border: 4px solid var(--border-color);
@@ -355,7 +364,7 @@
         }
 
         .timer-state-label {
-            font-size: 0.75rem;
+            font-size: 0.7rem;
             text-transform: uppercase;
             letter-spacing: 0.05em;
             color: var(--text-muted);
@@ -481,58 +490,6 @@
             color: var(--text-muted);
         }
 
-        /* Custom Confirmation Dialog Modal */
-        .confirm-modal-backdrop {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            background: rgba(0,0,0,0.5);
-            backdrop-filter: blur(4px);
-            display: none;
-            align-items: center;
-            justify-content: center;
-            z-index: 2000;
-            padding: 1rem;
-        }
-
-        .confirm-modal-backdrop.active {
-            display: flex;
-        }
-
-        .confirm-modal-content {
-            background: var(--card-bg);
-            border-radius: var(--radius);
-            width: 100%;
-            max-width: 380px;
-            padding: 1.5rem;
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
-            text-align: center;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.15);
-            animation: scaleUp 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-        }
-
-        .confirm-modal-title {
-            font-size: 1.1rem;
-            font-weight: 700;
-        }
-
-        .confirm-modal-text {
-            font-size: 0.9rem;
-            color: var(--text-muted);
-            line-height: 1.4;
-        }
-
-        .confirm-modal-actions {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 0.75rem;
-            margin-top: 0.5rem;
-        }
-
         /* Coffee Card Item */
         .coffee-card-item {
             background: var(--bg-color);
@@ -587,7 +544,7 @@
             color: var(--text-main);
         }
 
-        /* Stats & Analytics View with Search Dropdown */
+        /* Analytics & Bean Manager */
         .search-dropdown-container {
             position: relative;
             margin-bottom: 1.25rem;
@@ -638,7 +595,6 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            transition: background 0.2s ease;
         }
 
         .suggestion-item:last-child {
@@ -649,15 +605,6 @@
             background: var(--bg-color);
         }
 
-        .suggestion-item-score {
-            font-size: 0.75rem;
-            font-weight: 700;
-            background: var(--accent-olive);
-            color: #fff;
-            padding: 0.15rem 0.5rem;
-            border-radius: 6px;
-        }
-
         .optimizer-box {
             background: var(--card-bg);
             border: 1px solid var(--border-color);
@@ -665,27 +612,21 @@
             padding: 1.25rem;
             display: flex;
             flex-direction: column;
-            gap: 0.5rem;
+            gap: 0.75rem;
             margin-bottom: 1rem;
-            cursor: pointer;
             transition: var(--transition);
         }
 
         .optimizer-box:hover {
             border-color: var(--accent-beige);
-            transform: translateY(-1px);
             box-shadow: 0 4px 16px rgba(0,0,0,0.03);
-        }
-
-        .optimizer-box.highlighted {
-            border-color: var(--accent-terracotta);
-            box-shadow: 0 0 0 2px rgba(188, 108, 37, 0.2);
         }
 
         .optimizer-top-row {
             display: flex;
             justify-content: space-between;
             align-items: center;
+            cursor: pointer;
         }
 
         .optimizer-title {
@@ -707,7 +648,15 @@
             font-size: 0.85rem;
             line-height: 1.5;
             color: var(--text-muted);
-            margin-top: 0.25rem;
+            cursor: pointer;
+        }
+
+        .bean-actions-row {
+            display: flex;
+            gap: 0.5rem;
+            border-top: 1px solid var(--border-color);
+            padding-top: 0.75rem;
+            justify-content: flex-end;
         }
 
         .bean-tips-box {
@@ -740,7 +689,7 @@
                 <div class="widget-card" onclick="openProfileModal()" data-tooltip="Click to see your perfect brew">
                     <div class="widget-icon">☕</div>
                     <div class="widget-title">Taster Profile</div>
-                    <div class="widget-sub" id="profile-snippet">Click to inspect profile</div>
+                    <div class="widget-sub">Click to inspect profile</div>
                 </div>
                 <div class="widget-card" onclick="openCalendarModal()" data-tooltip="See past brews">
                     <div class="widget-icon">📅</div>
@@ -750,8 +699,8 @@
             </div>
 
             <div class="action-card" onclick="switchTab('log')">
-                <h3>+ Log New Cup</h3>
-                <p>Record your parameters, timer, and tasting notes</p>
+                <h3>Log New Cup</h3>
+                <p>Record your parameters, stopwatch timer, and tasting notes</p>
             </div>
         </section>
 
@@ -762,7 +711,7 @@
                 <!-- Step 1: Bean Selection -->
                 <div id="step-beans" class="step-container">
                     <div class="form-group">
-                        <label>Select Existing Bean or Add New</label>
+                        <label>Select Active Bean or Add New</label>
                         <select id="bean-select" onchange="handleBeanSelectChange()">
                             <option value="new">+ Add New Bean</option>
                         </select>
@@ -791,7 +740,6 @@
                         </div>
                     </div>
 
-                    <!-- Dynamic Bean Tips Container -->
                     <div id="bean-tips-container" class="bean-tips-box"></div>
 
                     <button class="btn" style="margin-top: 0.5rem;" onclick="goToStep(2)">Next: Grind & Ratio</button>
@@ -802,7 +750,7 @@
                     <div class="row">
                         <div class="form-group">
                             <label>Grind Size (Clicks)</label>
-                            <input type="number" id="param-grind" placeholder="e.g. 21" value="20">
+                            <input type="number" id="param-grind" placeholder="e.g. 21" value="21">
                         </div>
                         <div class="form-group">
                             <label>Water Temp (°C)</label>
@@ -816,54 +764,41 @@
                         </div>
                         <div class="form-group">
                             <label>Water Weight (g)</label>
-                            <input type="number" id="param-water" placeholder="300" value="250">
-                        </div>
-                    </div>
-                    
-                    <hr style="border: none; border-top: 1px solid var(--border-color); margin: 0.5rem 0;">
-
-                    <div class="row">
-                        <div class="form-group">
-                            <label>Include Bloom Phase?</label>
-                            <select id="param-bloom">
-                                <option value="yes" selected>Yes</option>
-                                <option value="no">No</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label>Number of Pours</label>
-                            <input type="number" id="param-pours" min="1" max="5" value="2">
+                            <input type="number" id="param-water" placeholder="250" value="250">
                         </div>
                     </div>
 
                     <div class="button-group">
                         <button class="btn btn-secondary" onclick="goToStep(1)">Back</button>
-                        <button class="btn" onclick="startTimerSession()">Start Brew Timer</button>
+                        <button class="btn" onclick="startTimerSession()">Start Brew Stopwatch</button>
                     </div>
                 </div>
 
-                <!-- Step 3: Timer & Continuous Snake Ring -->
+                <!-- Step 3: Stopwatch with Phase Ticks -->
                 <div id="step-timer" class="step-container step-hidden">
                     <div class="timer-view">
-                        <div class="timer-status-text" id="timer-status-instruction">Tap to Start Brew</div>
+                        <div class="timer-status-text" id="timer-status-instruction">Tap center to Start</div>
                         
                         <div class="ring-container">
-                            <svg class="ring-svg" viewBox="0 0 100 100">
+                            <svg class="ring-svg" viewBox="0 0 100 100" id="stopwatch-svg">
                                 <circle class="ring-bg" cx="50" cy="50" r="42"></circle>
-                                <circle id="snake-ring" class="ring-segment" cx="50" cy="50" r="42" stroke="#D4C5B9" stroke-dasharray="0 264" stroke-dashoffset="0"></circle>
+                                <circle id="stopwatch-progress" class="ring-progress" cx="50" cy="50" r="42" stroke-dasharray="0 264" stroke-dashoffset="0"></circle>
                             </svg>
                             <button class="timer-center-btn" onclick="handleTimerButtonPress()">
-                                <span class="timer-state-label" id="timer-action-label">Tap to Start</span>
+                                <span class="timer-state-label" id="timer-action-label">Start</span>
                                 <span class="timer-display" id="timer-clock">0:00</span>
                             </button>
                         </div>
 
                         <div style="font-size: 0.8rem; color: var(--text-muted); text-align: center;" id="timer-phase-counter">
-                            Phase 0 of 0
+                            Phase / Pour 1
                         </div>
                     </div>
 
-                    <button class="btn btn-secondary" onclick="goToStep(2)">Back</button>
+                    <div class="button-group">
+                        <button class="btn btn-secondary" onclick="goToStep(2)">Back</button>
+                        <button class="btn" onclick="finishBrewTimer()" style="background: var(--accent-olive);">Finish Brew</button>
+                    </div>
                 </div>
 
                 <!-- Step 4: Rating & Notes -->
@@ -888,16 +823,20 @@
         <!-- ANALYTICS VIEW -->
         <section id="view-stats" class="view">
             <div class="card">
-                <h2 style="font-size: 1.2rem; margin-bottom: 1rem;">Bean Rankings</h2>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                    <h2 style="font-size: 1.2rem;">Bean Rankings</h2>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <button class="btn btn-small btn-secondary" onclick="toggleArchiveView()" id="toggle-archive-btn">Show Archived</button>
+                    </div>
+                </div>
                 
-                <!-- Search & Jump Dropdown Bar -->
                 <div class="search-dropdown-container">
                     <input type="text" id="analytics-search-input" class="search-dropdown-input" placeholder="Search bean or roaster to jump..." oninput="handleSearchInput()" onfocus="handleSearchInput()">
                     <div id="search-suggestions-dropdown" class="search-suggestions-list"></div>
                 </div>
 
                 <div id="bean-stats-container" style="display: flex; flex-direction: column; gap: 1rem;">
-                    <p style="color: var(--text-muted); font-size: 0.9rem;">No data recorded yet. Log your first cup to view rankings.</p>
+                    <p style="color: var(--text-muted); font-size: 0.9rem;">No data recorded yet.</p>
                 </div>
             </div>
         </section>
@@ -931,20 +870,34 @@
         <div class="modal-content">
             <button class="modal-close" onclick="closeModals()">×</button>
             <h2 style="font-size: 1.25rem;" id="bean-modal-title">Bean Details</h2>
-            <div id="bean-modal-body" style="display: flex; flex-direction: column; gap: 1rem; font-size: 0.95rem; line-height: 1.5;">
-                <!-- Populated dynamically -->
+            <div id="bean-modal-body" style="display: flex; flex-direction: column; gap: 1rem; font-size: 0.95rem; line-height: 1.5;"></div>
+        </div>
+    </div>
+
+    <!-- MODAL: Edit Bean Name -->
+    <div class="modal-backdrop" id="modal-edit-bean">
+        <div class="modal-content">
+            <button class="modal-close" onclick="closeModals()">×</button>
+            <h2 style="font-size: 1.25rem;">Edit Bean / Roaster</h2>
+            <div class="form-group" style="margin-top: 0.5rem;">
+                <label>New Bean Name & Roaster</label>
+                <input type="text" id="edit-bean-input" placeholder="e.g. Yirgacheffe (New Roastery)">
+            </div>
+            <div class="button-group" style="margin-top: 1rem;">
+                <button class="btn btn-secondary" onclick="closeModals()">Cancel</button>
+                <button class="btn" onclick="executeEditBean()">Save Changes</button>
             </div>
         </div>
     </div>
 
-    <!-- MODAL: Custom Delete Confirmation Popup -->
-    <div class="confirm-modal-backdrop" id="modal-confirm-delete">
-        <div class="confirm-modal-content">
-            <div class="confirm-modal-title">Delete Entry</div>
-            <div class="confirm-modal-text">Are you sure you want to delete this entry?</div>
-            <div class="confirm-modal-actions">
-                <button class="btn btn-secondary" onclick="closeDeleteConfirmModal()">Cancel</button>
-                <button class="btn" style="background: var(--accent-danger);" onclick="executeDeleteBrew()">Delete</button>
+    <!-- MODAL: Delete Entry Confirmation -->
+    <div class="modal-backdrop" id="modal-confirm-delete">
+        <div class="modal-content" style="max-width: 380px; text-align: center;">
+            <h2 style="font-size: 1.1rem; margin-bottom: 0.5rem;">Delete Entry</h2>
+            <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 1rem;">Are you sure you want to delete this brew?</p>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+                <button class="btn btn-secondary" onclick="closeModals()">Cancel</button>
+                <button class="btn btn-danger" onclick="executeDeleteBrew()">Delete</button>
             </div>
         </div>
     </div>
@@ -959,22 +912,22 @@
             beanName: '',
             roast: 'Medium',
             flavor: '',
-            grind: 20,
+            grind: 21,
             temp: 92,
             coffee: 15,
-            water: 250,
-            bloom: 'yes',
-            poursCount: 2,
-            phases: [],
-            currentPhaseIdx: 0
+            water: 250
         };
 
-        let timerInterval = null;
-        let totalTimerSeconds = 0;
-        let totalMaxSeconds = 0;
-        let isTimerRunning = false;
+        let stopwatchInterval = null;
+        let stopwatchSeconds = 0;
+        let isStopwatchRunning = false;
+        let phaseCount = 1;
+        let lapTicksAngles = [];
+
         let selectedCalendarDateStr = null;
         let brewIdPendingDelete = null;
+        let beanNameToEdit = null;
+        let showArchivedBeans = false;
         let rankedBeansCache = [];
         const circumference = 264; // 2 * PI * 42
 
@@ -999,7 +952,7 @@
         function populateBeanDropdown() {
             const select = document.getElementById('bean-select');
             select.innerHTML = '<option value="new">+ Add New Bean</option>';
-            db.beans.forEach((b, idx) => {
+            db.beans.filter(b => !b.archived).forEach((b, idx) => {
                 const opt = document.createElement('option');
                 opt.value = idx;
                 opt.textContent = b.name;
@@ -1018,11 +971,14 @@
                 tipsContainer.style.display = 'none';
             } else {
                 newFields.style.display = 'none';
-                const selectedBeanName = db.beans[val].name;
-                const pastBrews = db.brews.filter(b => b.beanName.toLowerCase() === selectedBeanName.toLowerCase());
+                const activeBeansList = db.beans.filter(b => !b.archived);
+                const selectedBean = activeBeansList[val];
+                if (!selectedBean) return;
+
+                const pastBrews = db.brews.filter(b => b.beanName.toLowerCase() === selectedBean.name.toLowerCase());
                 
                 if (pastBrews.length > 0) {
-                    let tipsHtml = `<strong>💡 Past Brew Insights for ${selectedBeanName}:</strong><br>`;
+                    let tipsHtml = `<strong>💡 Past Brew Insights for ${selectedBean.name}:</strong><br>`;
                     let acidicCount = 0;
                     let bitterCount = 0;
                     let lastGrind = pastBrews[0].grind;
@@ -1035,9 +991,9 @@
                     });
 
                     if (acidicCount > bitterCount) {
-                        tipsHtml += `- Previous cups noted acidity/sourness. Try grinding slightly finer (current avg around ${lastGrind}) or raising water temp (currently ${lastTemp}°C) for higher extraction.`;
+                        tipsHtml += `- Previous cups noted acidity/sourness. Try grinding slightly finer or raising water temp.`;
                     } else if (bitterCount > acidicCount) {
-                        tipsHtml += `- Previous cups noted bitterness. Try grinding coarser or lowering water temp slightly to reduce over-extraction.`;
+                        tipsHtml += `- Previous cups noted bitterness. Try grinding coarser or lowering water temp slightly.`;
                     } else {
                         tipsHtml += `- Average rating across ${pastBrews.length} brews is ${(pastBrews.reduce((acc,c)=>acc+c.rank,0)/pastBrews.length).toFixed(1)}/10. Recent grind: ${lastGrind}, Temp: ${lastTemp}°C.`;
                     }
@@ -1050,9 +1006,9 @@
         }
 
         function goToStep(stepNum) {
-            if (stepNum !== 3 && isTimerRunning) {
-                clearInterval(timerInterval);
-                isTimerRunning = false;
+            if (stepNum !== 3 && isStopwatchRunning) {
+                clearInterval(stopwatchInterval);
+                isStopwatchRunning = false;
             }
 
             document.getElementById('step-beans').classList.add('step-hidden');
@@ -1075,124 +1031,108 @@
             }
             if (stepNum === 3) {
                 document.getElementById('step-timer').classList.remove('step-hidden');
+                startStopwatchSession();
             }
             if (stepNum === 4) {
                 document.getElementById('step-complete').classList.remove('step-hidden');
             }
         }
 
-        function startTimerSession() {
+        function startStopwatchSession() {
             const beanVal = document.getElementById('bean-select').value;
             if (beanVal === 'new') {
                 activeBrew.beanName = document.getElementById('bean-name').value.trim();
                 activeBrew.roast = document.getElementById('bean-roast').value;
                 activeBrew.flavor = document.getElementById('bean-flavor').value.trim();
             } else {
-                const b = db.beans[beanVal];
+                const activeBeansList = db.beans.filter(b => !b.archived);
+                const b = activeBeansList[beanVal];
                 activeBrew.beanName = b.name;
                 activeBrew.roast = b.roast;
                 activeBrew.flavor = b.flavor;
             }
 
-            activeBrew.grind = parseFloat(document.getElementById('param-grind').value) || 20;
+            activeBrew.grind = parseFloat(document.getElementById('param-grind').value) || 21;
             activeBrew.temp = parseFloat(document.getElementById('param-temp').value) || 92;
             activeBrew.coffee = parseFloat(document.getElementById('param-coffee').value) || 15;
             activeBrew.water = parseFloat(document.getElementById('param-water').value) || 250;
-            activeBrew.bloom = document.getElementById('param-bloom').value;
-            activeBrew.poursCount = parseInt(document.getElementById('param-pours').value) || 2;
 
-            activeBrew.phases = [];
-            if (activeBrew.bloom === 'yes') {
-                activeBrew.phases.push({ name: 'Bloom Phase', color: '#D4C5B9', duration: 30 });
-            }
-            for (let i = 1; i <= activeBrew.poursCount; i++) {
-                activeBrew.phases.push({ name: `Pour ${i}`, color: '#BC6C25', duration: 15 });
-                activeBrew.phases.push({ name: `Drawdown ${i}`, color: '#606C38', duration: 45 });
-            }
+            stopwatchSeconds = 0;
+            phaseCount = 1;
+            isStopwatchRunning = false;
+            lapTicksAngles = [];
 
-            totalMaxSeconds = activeBrew.phases.reduce((acc, p) => acc + p.duration, 0);
-            totalTimerSeconds = 0;
-            activeBrew.currentPhaseIdx = 0;
-            isTimerRunning = false;
+            // Clear old SVG lap ticks
+            const svg = document.getElementById('stopwatch-svg');
+            svg.querySelectorAll('.lap-tick').forEach(el => el.remove());
 
-            goToStep(3);
-            resetSnakeRing();
-            updateTimerUI();
+            updateStopwatchUI();
         }
 
-        function resetSnakeRing() {
-            const ring = document.getElementById('snake-ring');
-            ring.setAttribute('stroke', '#D4C5B9');
-            ring.setAttribute('stroke-dasharray', `0 ${circumference}`);
-            ring.setAttribute('stroke-dashoffset', '0');
-        }
-
-        function updateTimerUI() {
-            let accumulated = 0;
-            let currentPhaseObj = activeBrew.phases[0];
-            let phaseIdx = 0;
-            
-            for (let i = 0; i < activeBrew.phases.length; i++) {
-                let p = activeBrew.phases[i];
-                if (totalTimerSeconds <= accumulated + p.duration) {
-                    currentPhaseObj = p;
-                    phaseIdx = i;
-                    break;
-                }
-                accumulated += p.duration;
-                if (i === activeBrew.phases.length - 1) {
-                    currentPhaseObj = p;
-                    phaseIdx = i;
-                }
-            }
-
-            activeBrew.currentPhaseIdx = phaseIdx;
-
-            document.getElementById('timer-status-instruction').textContent = `${currentPhaseObj.name} (${totalTimerSeconds}s / ${totalMaxSeconds}s)`;
-            document.getElementById('timer-phase-counter').textContent = `Phase ${phaseIdx + 1} of ${activeBrew.phases.length}`;
-            document.getElementById('timer-action-label').textContent = isTimerRunning ? 'Running...' : 'Tap to Start';
-            
-            const mins = Math.floor(totalTimerSeconds / 60);
-            const secs = totalTimerSeconds % 60;
+        function updateStopwatchUI() {
+            const mins = Math.floor(stopwatchSeconds / 60);
+            const secs = stopwatchSeconds % 60;
             document.getElementById('timer-clock').textContent = `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+            document.getElementById('timer-phase-counter').textContent = `Phase / Pour ${phaseCount}`;
+            document.getElementById('timer-action-label').textContent = isStopwatchRunning ? 'Tap to Mark Lap' : 'Start';
+            document.getElementById('timer-status-instruction').textContent = isStopwatchRunning ? 'Tap center to record lap/pour tick' : 'Tap to Start Stopwatch';
 
-            const progressRatio = Math.min(totalTimerSeconds / totalMaxSeconds, 1);
-            const snakeLength = circumference * progressRatio;
-
-            const ring = document.getElementById('snake-ring');
-            ring.setAttribute('stroke', currentPhaseObj.color);
-            ring.setAttribute('stroke-dasharray', `${snakeLength} ${circumference}`);
-            ring.setAttribute('stroke-dashoffset', `${circumference - snakeLength}`);
+            // Continuous progress bar loop every 60 seconds
+            const progressRatio = (stopwatchSeconds % 60) / 60;
+            const strokeLen = circumference * progressRatio;
+            const progressCircle = document.getElementById('stopwatch-progress');
+            progressCircle.setAttribute('stroke-dasharray', `${strokeLen} ${circumference}`);
+            progressCircle.setAttribute('stroke-dashoffset', `${circumference - strokeLen}`);
         }
 
         function handleTimerButtonPress() {
-            if (!isTimerRunning) {
-                if (totalTimerSeconds >= totalMaxSeconds) {
-                    startTimerSession();
-                    return;
-                }
-                isTimerRunning = true;
-                timerInterval = setInterval(() => {
-                    totalTimerSeconds++;
-                    updateTimerUI();
-                    if (totalTimerSeconds >= totalMaxSeconds) {
-                        clearInterval(timerInterval);
-                        isTimerRunning = false;
-                        document.getElementById('timer-action-label').textContent = 'Done!';
-                        document.getElementById('timer-status-instruction').textContent = 'Brew session complete!';
-                        setTimeout(() => goToStep(4), 1000);
-                    }
+            if (!isStopwatchRunning) {
+                isStopwatchRunning = true;
+                stopwatchInterval = setInterval(() => {
+                    stopwatchSeconds++;
+                    updateStopwatchUI();
                 }, 1000);
+                updateStopwatchUI();
             } else {
-                let accumulated = 0;
-                for (let i = 0; i <= activeBrew.currentPhaseIdx; i++) {
-                    accumulated += activeBrew.phases[i].duration;
-                }
-                if (accumulated > totalTimerSeconds) {
-                    totalTimerSeconds = accumulated;
-                    updateTimerUI();
-                }
+                // Mark lap tick on the circle
+                addLapTickMarker();
+                phaseCount++;
+                updateStopwatchUI();
             }
+        }
+
+        function addLapTickMarker() {
+            const progressRatio = (stopwatchSeconds % 60) / 60;
+            const angle = progressRatio * 360 - 90; // offset for SVG rotation
+            const rad = angle * (Math.PI / 180);
+
+            // Center is (50, 50), radius r=42
+            const cx = 50;
+            const cy = 50;
+            const rOuter = 42;
+            const rInner = 36;
+
+            const x1 = cx + rInner * Math.cos(rad);
+            const y1 = cy + rInner * Math.sin(rad);
+            const x2 = cx + rOuter * Math.cos(rad);
+            const y2 = cy + rOuter * Math.sin(rad);
+
+            const svg = document.getElementById('stopwatch-svg');
+            const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            line.setAttribute('x1', x1);
+            line.setAttribute('y1', y1);
+            line.setAttribute('x2', x2);
+            line.setAttribute('y2', y2);
+            line.setAttribute('class', 'lap-tick');
+            svg.appendChild(line);
+        }
+
+        function finishBrewTimer() {
+            if (isStopwatchRunning) {
+                clearInterval(stopwatchInterval);
+                isStopwatchRunning = false;
+            }
+            goToStep(4);
         }
 
         function saveBrewCard() {
@@ -1209,7 +1149,7 @@
                 temp: activeBrew.temp,
                 coffee: activeBrew.coffee,
                 water: activeBrew.water,
-                totalTime: totalTimerSeconds,
+                totalTime: stopwatchSeconds,
                 rank: rank,
                 notes: notes
             };
@@ -1219,8 +1159,11 @@
                 db.beans.push({
                     name: activeBrew.beanName,
                     roast: activeBrew.roast,
-                    flavor: activeBrew.flavor
+                    flavor: activeBrew.flavor,
+                    archived: false
                 });
+            } else if (existingBean.archived) {
+                existingBean.archived = false; // unarchive if brewed again
             }
 
             db.brews.unshift(newBrew);
@@ -1230,47 +1173,65 @@
             switchTab('dashboard');
         }
 
-        function promptDeleteBrew(id) {
-            brewIdPendingDelete = id;
-            document.getElementById('modal-confirm-delete').classList.add('active');
+        function toggleArchiveView() {
+            showArchivedBeans = !showArchivedBeans;
+            document.getElementById('toggle-archive-btn').textContent = showArchivedBeans ? 'Show Active' : 'Show Archived';
+            renderAnalytics();
         }
 
-        function closeDeleteConfirmModal() {
-            brewIdPendingDelete = null;
-            document.getElementById('modal-confirm-delete').classList.remove('active');
+        function promptEditBean(beanName) {
+            beanNameToEdit = beanName;
+            document.getElementById('edit-bean-input').value = beanName;
+            document.getElementById('modal-edit-bean').classList.add('active');
         }
 
-        function executeDeleteBrew() {
-            if (brewIdPendingDelete !== null) {
-                db.brews = db.brews.filter(b => b.id !== brewIdPendingDelete);
-                localStorage.setItem('brewlog_db', JSON.stringify(db));
+        function executeEditBean() {
+            const newName = document.getElementById('edit-bean-input').value.trim();
+            if (!newName || !beanNameToEdit) return;
 
-                if (selectedCalendarDateStr) {
-                    selectCalendarDate(selectedCalendarDateStr);
+            // Update in db.beans
+            const beanObj = db.beans.find(b => b.name === beanNameToEdit);
+            if (beanObj) beanObj.name = newName;
+
+            // Update in past brews
+            db.brews.forEach(b => {
+                if (b.beanName === beanNameToEdit) {
+                    b.beanName = newName;
                 }
-                renderCalendarGrid();
+            });
+
+            localStorage.setItem('brewlog_db', JSON.stringify(db));
+            closeModals();
+            renderAnalytics();
+        }
+
+        function toggleArchiveBean(beanName) {
+            const beanObj = db.beans.find(b => b.name === beanName);
+            if (beanObj) {
+                beanObj.archived = !beanObj.archived;
+                localStorage.setItem('brewlog_db', JSON.stringify(db));
                 renderAnalytics();
             }
-            closeDeleteConfirmModal();
         }
 
         function renderAnalytics() {
             const container = document.getElementById('bean-stats-container');
-            if (db.brews.length === 0) {
-                container.innerHTML = `<p style="color: var(--text-muted); font-size: 0.9rem;">No data recorded yet.</p>`;
+            const targetBeans = db.beans.filter(b => showArchivedBeans ? b.archived : !b.archived);
+
+            if (db.brews.length === 0 || targetBeans.length === 0) {
+                container.innerHTML = `<p style="color: var(--text-muted); font-size: 0.9rem;">${showArchivedBeans ? 'No archived beans found.' : 'No active beans recorded yet.'}</p>`;
                 rankedBeansCache = [];
                 return;
             }
 
             const groups = {};
-            db.brews.forEach(b => {
-                if (!groups[b.beanName]) groups[b.beanName] = [];
-                groups[b.beanName].push(b);
+            targetBeans.forEach(tb => {
+                groups[tb.name] = db.brews.filter(b => b.beanName.toLowerCase() === tb.name.toLowerCase());
             });
 
             rankedBeansCache = Object.keys(groups).map(beanName => {
                 const brews = groups[beanName];
-                const avgRank = brews.reduce((sum, c) => sum + c.rank, 0) / brews.length;
+                const avgRank = brews.length > 0 ? brews.reduce((sum, c) => sum + c.rank, 0) / brews.length : 0;
                 return { beanName, brews, avgRank };
             });
 
@@ -1280,54 +1241,47 @@
             rankedBeansCache.forEach((item, index) => {
                 const { beanName, brews, avgRank } = item;
                 const safeId = 'bean-box-' + index;
-                
-                let bitterCount = 0;
-                let sourCount = 0;
-                let recentGrind = brews[0].grind;
-                let recentTemp = brews[0].temp;
+                const beanObj = db.beans.find(b => b.name === beanName);
+                const isArchived = beanObj ? beanObj.archived : false;
 
-                brews.forEach(b => {
-                    const text = (b.notes || '').toLowerCase();
-                    if (text.includes('bitter') || text.includes('astringent') || text.includes('harsh') || text.includes('over')) bitterCount++;
-                    if (text.includes('sour') || text.includes('acidic') || text.includes('bright') || text.includes('under')) sourCount++;
-                });
-
-                let advice = `Average Rating: <strong>${avgRank.toFixed(1)}/10</strong> across ${brews.length} logged cup(s).<br><br>`;
-                if (bitterCount > sourCount) {
-                    advice += `⚠️ <strong>Over-Extraction Detected:</strong> Multiple tasting notes mentioned bitterness. Try <strong>grinding coarser</strong> than ${recentGrind} or <strong>lowering water temp</strong> below ${recentTemp}°C.`;
-                } else if (sourCount > bitterCount) {
-                    advice += `⚠️ <strong>Under-Extraction Detected:</strong> Multiple tasting notes reported sourness. Try <strong>grinding finer</strong> than ${recentGrind} or <strong>increasing water temp</strong> above ${recentTemp}°C.`;
-                } else {
-                    advice += `✨ <strong>Balanced Profile:</strong> Extractions show good equilibrium. Maintain grind around <strong>${recentGrind}</strong> and water temp at <strong>${recentTemp}°C</strong>.`;
-                }
+                let advice = brews.length > 0 ? `Average Rating: <strong>${avgRank.toFixed(1)}/10</strong> across ${brews.length} logged cup(s).` : `No brews recorded for this bean yet.`;
 
                 html += `
-                    <div class="optimizer-box" id="${safeId}" onclick="openBeanDetailsModal(${index})">
-                        <div class="optimizer-top-row">
+                    <div class="optimizer-box" id="${safeId}">
+                        <div class="optimizer-top-row" onclick="openBeanDetailsModal('${beanName.replace(/'/g, "\\'")}')">
                             <div class="optimizer-title">${beanName}</div>
-                            <div class="optimizer-rank-badge">#${index + 1} • ${avgRank.toFixed(1)}/10</div>
+                            <div class="optimizer-rank-badge">${brews.length > 0 ? '#' + (index + 1) + ' • ' + avgRank.toFixed(1) + '/10' : 'New'}</div>
                         </div>
-                        <div class="optimizer-text">${advice}</div>
+                        <div class="optimizer-text" onclick="openBeanDetailsModal('${beanName.replace(/'/g, "\\'")}')">${advice}</div>
+                        <div class="bean-actions-row">
+                            <button class="btn btn-small btn-secondary" onclick="promptEditBean('${beanName.replace(/'/g, "\\'")}')">Edit Name</button>
+                            <button class="btn btn-small btn-secondary" onclick="toggleArchiveBean('${beanName.replace(/'/g, "\\'")}')">${isArchived ? 'Unarchive' : 'Archive'}</button>
+                        </div>
                     </div>
                 `;
             });
             container.innerHTML = html;
         }
 
-        function openBeanDetailsModal(index) {
-            const item = rankedBeansCache[index];
+        function openBeanDetailsModal(beanName) {
+            const item = rankedBeansCache.find(r => r.beanName === beanName);
             if (!item) return;
 
             const modal = document.getElementById('modal-bean-details');
             document.getElementById('bean-modal-title').textContent = item.beanName;
 
-            // Find highest ranked cup(s)
+            if (item.brews.length === 0) {
+                document.getElementById('bean-modal-body').innerHTML = `<p>No brews logged for this bean yet.</p>`;
+                modal.classList.add('active');
+                return;
+            }
+
             let highestRank = -1;
             item.brews.forEach(b => {
                 if (b.rank > highestRank) highestRank = b.rank;
             });
             const bestBrews = item.brews.filter(b => b.rank === highestRank);
-            const bestBrew = bestBrews[0]; // Take top matching
+            const bestBrew = bestBrews[0];
 
             const roastVal = bestBrew.roast || 'Medium';
             const flavorVal = bestBrew.flavor || 'None specified';
@@ -1338,7 +1292,7 @@
                     <div><strong>Roast Level:</strong> ${roastVal}</div>
                     <div><strong>Flavor Notes / Profile:</strong> ${flavorVal}</div>
                     <hr style="border: none; border-top: 1px solid var(--border-color); margin: 0.25rem 0;">
-                    <div><strong>⭐ Highest Ranked Cup Metrics (${bestBrew.rank}/10):</strong></div>
+                    <div><strong>Highest Ranked Cup Metrics (${bestBrew.rank}/10):</strong></div>
                     <div style="background: var(--bg-color); padding: 0.85rem; border-radius: 8px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.5rem; font-size: 0.85rem;">
                         <div>Grind Size: <strong>${bestBrew.grind} clicks</strong></div>
                         <div>Water Temp: <strong>${bestBrew.temp}°C</strong></div>
@@ -1366,7 +1320,7 @@
             const matches = rankedBeansCache.filter(item => item.beanName.toLowerCase().includes(query));
 
             if (matches.length === 0) {
-                dropdown.innerHTML = `<div class="suggestion-item" style="color: var(--text-muted); cursor: default;">No matching beans or roasters found</div>`;
+                dropdown.innerHTML = `<div class="suggestion-item" style="color: var(--text-muted); cursor: default;">No matching beans found</div>`;
                 dropdown.classList.add('active');
                 return;
             }
@@ -1377,7 +1331,7 @@
                 html += `
                     <div class="suggestion-item" onclick="jumpToBean(${originalIndex}, '${item.beanName.replace(/'/g, "\\'")}')">
                         <span>${item.beanName}</span>
-                        <span class="suggestion-item-score">#${originalIndex + 1} • ${item.avgRank.toFixed(1)}/10</span>
+                        <span style="font-size: 0.75rem; font-weight: 700; color: var(--text-muted);">${item.brews.length > 0 ? '#' + (originalIndex + 1) + ' • ' + item.avgRank.toFixed(1) + '/10' : 'New'}</span>
                     </div>
                 `;
             });
@@ -1393,14 +1347,9 @@
             const targetBox = document.getElementById('bean-box-' + index);
             if (targetBox) {
                 targetBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                targetBox.classList.add('highlighted');
-                setTimeout(() => {
-                    targetBox.classList.remove('highlighted');
-                }, 2000);
             }
         }
 
-        // Close dropdown when clicking outside
         document.addEventListener('click', function(e) {
             const searchContainer = document.querySelector('.search-dropdown-container');
             if (searchContainer && !searchContainer.contains(e.target)) {
@@ -1416,47 +1365,15 @@
             if (db.brews.length === 0) {
                 body.innerHTML = `<p>Log some coffee cups to generate your taster profile.</p>`;
             } else {
-                const regionCounts = {};
-                db.brews.forEach(b => {
-                    const region = b.beanName.split(' ')[0] || 'Unknown';
-                    regionCounts[region] = (regionCounts[region] & 0 || 0) + 1;
-                });
-                let topRegion = Object.keys(regionCounts).reduce((a, b) => regionCounts[a] > regionCounts[b] ? a : b);
-
                 const roastCounts = {};
                 db.brews.forEach(b => roastCounts[b.roast] = (roastCounts[b.roast] || 0) + 1);
                 let topRoast = Object.keys(roastCounts).reduce((a, b) => roastCounts[a] > roastCounts[b] ? a : b);
 
-                const noteCounts = {};
-                db.brews.forEach(b => {
-                    if (b.flavor) {
-                        b.flavor.split(',').forEach(tag => {
-                            const clean = tag.trim().toLowerCase();
-                            if (clean) noteCounts[clean] = (noteCounts[clean] || 0) + 1;
-                        });
-                    }
-                    if (b.notes) {
-                        b.notes.split(' ').forEach(word => {
-                            const clean = word.replace(/[^a-zA-Z]/g, '').toLowerCase();
-                            if (clean.length > 3) noteCounts[clean] = (noteCounts[clean] || 0) + 1;
-                        });
-                    }
-                });
-
-                const sortedNotes = Object.keys(noteCounts).sort((a,b) => noteCounts[b] - noteCounts[a]).slice(0, 3);
-
                 body.innerHTML = `
                     <p>Compiled from your <strong>${db.brews.length}</strong> recorded brews:</p>
                     <ul style="padding-left: 1.25rem; display: flex; flex-direction: column; gap: 0.5rem;">
-                        <li><strong>Region:</strong> ${topRegion}</li>
-                        <li><strong>Roast:</strong> ${topRoast}</li>
-                        <li><strong>Top 3 Tasting Notes:</strong>
-                            <ol style="padding-left: 1.25rem; margin-top: 0.25rem;">
-                                <li>${sortedNotes[0] ? sortedNotes[0] : 'Balanced'}</li>
-                                <li>${sortedNotes[1] ? sortedNotes[1] : 'Sweet'}</li>
-                                <li>${sortedNotes[2] ? sortedNotes[2] : 'Clean'}</li>
-                            </ol>
-                        </li>
+                        <li><strong>Preferred Roast:</strong> ${topRoast}</li>
+                        <li><strong>Total Brews Logged:</strong> ${db.brews.length}</li>
                     </ul>
                 `;
             }
@@ -1472,6 +1389,7 @@
         function closeModals() {
             document.querySelectorAll('.modal-backdrop').forEach(m => m.classList.remove('active'));
             selectedCalendarDateStr = null;
+            beanNameToEdit = null;
         }
 
         function renderCalendarGrid() {
@@ -1533,7 +1451,7 @@
                             </div>
                             <div class="coffee-card-right">
                                 <div class="coffee-card-score">${brew.rank}/10</div>
-                                <button class="btn-danger" onclick="promptDeleteBrew(${brew.id})">Delete</button>
+                                <button class="btn btn-small btn-danger" onclick="promptDeleteBrew(${brew.id})">Delete</button>
                             </div>
                         </div>
                         <div class="coffee-card-meta">
@@ -1547,6 +1465,25 @@
                 `;
             });
             container.innerHTML = html;
+        }
+
+        function promptDeleteBrew(id) {
+            brewIdPendingDelete = id;
+            document.getElementById('modal-confirm-delete').classList.add('active');
+        }
+
+        function executeDeleteBrew() {
+            if (brewIdPendingDelete !== null) {
+                db.brews = db.brews.filter(b => b.id !== brewIdPendingDelete);
+                localStorage.setItem('brewlog_db', JSON.stringify(db));
+
+                if (selectedCalendarDateStr) {
+                    selectCalendarDate(selectedCalendarDateStr);
+                }
+                renderCalendarGrid();
+                renderAnalytics();
+            }
+            closeModals();
         }
     </script>
 </body>
