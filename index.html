@@ -333,12 +333,6 @@
             transition: stroke-dasharray 0.2s linear, stroke-dashoffset 0.2s linear;
         }
 
-        .lap-tick {
-            stroke: var(--text-main);
-            stroke-width: 3;
-            stroke-linecap: round;
-        }
-
         .timer-center-btn {
             position: relative;
             width: 185px;
@@ -354,6 +348,7 @@
             box-shadow: 0 8px 24px rgba(0,0,0,0.06);
             transition: var(--transition);
             z-index: 5;
+            pointer-events: auto;
         }
 
         .timer-center-btn:hover {
@@ -765,30 +760,44 @@
                         </div>
                     </div>
 
+                    <div class="row">
+                        <div class="form-group">
+                            <label>Bloom? (Yes/No)</label>
+                            <select id="param-bloom">
+                                <option value="Yes" selected>Yes</option>
+                                <option value="No">No</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Number of Pours</label>
+                            <input type="number" id="param-pours" min="1" max="10" value="3">
+                        </div>
+                    </div>
+
                     <div class="button-group">
                         <button class="btn btn-secondary" onclick="goToStep(1)">Back</button>
                         <button class="btn" onclick="startTimerSession()">Start Brew Stopwatch</button>
                     </div>
                 </div>
 
-                <!-- Step 3: Stopwatch with Phase Ticks -->
+                <!-- Step 3: Stopwatch Timer -->
                 <div id="step-timer" class="step-container step-hidden">
                     <div class="timer-view">
-                        <div class="timer-status-text" id="timer-status-instruction">Tap center to Start</div>
+                        <div class="timer-status-text" id="timer-status-instruction">Tap button to Start / Pause / Reset</div>
                         
-                        <div class="ring-container" onclick="handleTimerButtonPress()">
+                        <div class="ring-container">
                             <svg class="ring-svg" viewBox="0 0 100 100" id="stopwatch-svg">
                                 <circle class="ring-bg" cx="50" cy="50" r="42"></circle>
                                 <circle id="stopwatch-progress" class="ring-progress" cx="50" cy="50" r="42" stroke-dasharray="0 264" stroke-dashoffset="0"></circle>
                             </svg>
-                            <div class="timer-center-btn">
+                            <div class="timer-center-btn" onclick="handleTimerButtonPress()">
                                 <span class="timer-state-label" id="timer-action-label">Start</span>
                                 <span class="timer-display" id="timer-clock">0:00</span>
                             </div>
                         </div>
 
-                        <div style="font-size: 0.8rem; color: var(--text-muted); text-align: center;" id="timer-phase-counter">
-                            Phase / Pour 1
+                        <div style="font-size: 0.8rem; color: var(--text-muted); text-align: center;" id="timer-params-summary">
+                            Bloom: Yes • 3 Pours
                         </div>
                     </div>
 
@@ -937,13 +946,14 @@
             grind: 21,
             temp: 92,
             coffee: 15,
-            water: 250
+            water: 250,
+            bloom: 'Yes',
+            pours: 3
         };
 
         let stopwatchInterval = null;
         let stopwatchSeconds = 0;
         let isStopwatchRunning = false;
-        let phaseCount = 1;
 
         let selectedCalendarDateStr = null;
         let brewIdPendingDelete = null;
@@ -1083,15 +1093,14 @@
             activeBrew.temp = parseFloat(document.getElementById('param-temp').value) || 92;
             activeBrew.coffee = parseFloat(document.getElementById('param-coffee').value) || 15;
             activeBrew.water = parseFloat(document.getElementById('param-water').value) || 250;
+            activeBrew.bloom = document.getElementById('param-bloom').value;
+            activeBrew.pours = parseInt(document.getElementById('param-pours').value) || 3;
+
+            document.getElementById('timer-params-summary').textContent = `Bloom: ${activeBrew.bloom} • ${activeBrew.pours} Pours`;
 
             stopwatchSeconds = 0;
-            phaseCount = 1;
             isStopwatchRunning = false;
             if (stopwatchInterval) clearInterval(stopwatchInterval);
-
-            // Clear old SVG lap ticks
-            const svg = document.getElementById('stopwatch-svg');
-            svg.querySelectorAll('.lap-tick').forEach(el => el.remove());
 
             updateStopwatchUI();
         }
@@ -1100,9 +1109,8 @@
             const mins = Math.floor(stopwatchSeconds / 60);
             const secs = stopwatchSeconds % 60;
             document.getElementById('timer-clock').textContent = `${mins}:${secs < 10 ? '0' : ''}${secs}`;
-            document.getElementById('timer-phase-counter').textContent = `Phase / Pour ${phaseCount}`;
-            document.getElementById('timer-action-label').textContent = isStopwatchRunning ? 'Tap Lap' : 'Start';
-            document.getElementById('timer-status-instruction').textContent = isStopwatchRunning ? 'Tap center to record lap/pour tick' : 'Tap to Start Stopwatch';
+            document.getElementById('timer-action-label').textContent = isStopwatchRunning ? 'Pause' : 'Start';
+            document.getElementById('timer-status-instruction').textContent = isStopwatchRunning ? 'Tap center to pause' : 'Tap to start / resume';
 
             const progressRatio = (stopwatchSeconds % 60) / 60;
             const strokeLen = circumference * progressRatio;
@@ -1119,37 +1127,11 @@
                     stopwatchSeconds++;
                     updateStopwatchUI();
                 }, 1000);
-                updateStopwatchUI();
             } else {
-                addLapTickMarker();
-                phaseCount++;
-                updateStopwatchUI();
+                isStopwatchRunning = false;
+                clearInterval(stopwatchInterval);
             }
-        }
-
-        function addLapTickMarker() {
-            const progressRatio = (stopwatchSeconds % 60) / 60;
-            const angle = progressRatio * 360 - 90;
-            const rad = angle * (Math.PI / 180);
-
-            const cx = 50;
-            const cy = 50;
-            const rOuter = 42;
-            const rInner = 36;
-
-            const x1 = cx + rInner * Math.cos(rad);
-            const y1 = cy + rInner * Math.sin(rad);
-            const x2 = cx + rOuter * Math.cos(rad);
-            const y2 = cy + rOuter * Math.sin(rad);
-
-            const svg = document.getElementById('stopwatch-svg');
-            const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-            line.setAttribute('x1', x1);
-            line.setAttribute('y1', y1);
-            line.setAttribute('x2', x2);
-            line.setAttribute('y2', y2);
-            line.setAttribute('class', 'lap-tick');
-            svg.appendChild(line);
+            updateStopwatchUI();
         }
 
         function finishBrewTimer() {
@@ -1175,12 +1157,13 @@
                 temp: activeBrew.temp,
                 coffee: activeBrew.coffee,
                 water: activeBrew.water,
+                bloom: activeBrew.bloom,
+                pours: activeBrew.pours,
                 totalTime: stopwatchSeconds,
                 rank: rank,
                 notes: notes
             };
 
-            // Check if already logged today for this bean
             const existingToday = db.brews.find(b => b.beanName.toLowerCase() === activeBrew.beanName.toLowerCase() && b.date === todayStr);
             if (existingToday) {
                 document.getElementById('modal-duplicate-warning').classList.add('active');
@@ -1264,9 +1247,7 @@
         function executeDeleteBean() {
             if (!beanNameToDelete) return;
 
-            // Remove bean from db.beans
             db.beans = db.beans.filter(b => b.name !== beanNameToDelete);
-            // Remove associated brews from db.brews
             db.brews = db.brews.filter(b => b.beanName !== beanNameToDelete);
 
             localStorage.setItem('brewlog_db', JSON.stringify(db));
@@ -1361,12 +1342,15 @@
 
             const roastVal = bestBrew.roast || 'Medium';
             const flavorVal = bestBrew.flavor || 'None specified';
+            const bloomVal = bestBrew.bloom || 'Yes';
+            const poursVal = bestBrew.pours || 3;
 
             const body = document.getElementById('bean-modal-body');
             body.innerHTML = `
                 <div style="display: flex; flex-direction: column; gap: 0.75rem;">
                     <div><strong>Roast Level:</strong> ${roastVal}</div>
                     <div><strong>Flavor Notes / Profile:</strong> ${flavorVal}</div>
+                    <div><strong>Parameters:</strong> Bloom: ${bloomVal} • ${poursVal} Pours</div>
                     <hr style="border: none; border-top: 1px solid var(--border-color); margin: 0.25rem 0;">
                     <div><strong>Highest Ranked Cup Metrics (${bestBrew.rank}/10):</strong></div>
                     <div style="background: var(--bg-color); padding: 0.85rem; border-radius: 8px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.5rem; font-size: 0.85rem;">
@@ -1545,12 +1529,14 @@
 
             let html = `<h4 style="font-size: 0.95rem; margin-bottom: 0.5rem;">Brews on ${dateStr}:</h4>`;
             matchingBrews.forEach(brew => {
+                const bloomInfo = brew.bloom ? ` • Bloom: ${brew.bloom}` : '';
+                const poursInfo = brew.pours ? ` • ${brew.pours} Pours` : '';
                 html += `
                     <div class="coffee-card-item">
                         <div class="coffee-card-header">
                             <div>
                                 <div class="coffee-card-bean">${brew.beanName}</div>
-                                <div style="font-size: 0.75rem; color: var(--text-muted);">${brew.roast} Roast • ${brew.flavor || 'No flavor tags'}</div>
+                                <div style="font-size: 0.75rem; color: var(--text-muted);">${brew.roast} Roast${bloomInfo}${poursInfo}</div>
                             </div>
                             <div class="coffee-card-right">
                                 <div class="coffee-card-score">${brew.rank}/10</div>
