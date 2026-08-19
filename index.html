@@ -288,86 +288,50 @@
             display: none !important;
         }
 
-        /* Continuous Stopwatch Timer UI */
+        /* Compound Horizontal Bar Timer UI */
         .timer-view {
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            gap: 1.25rem;
+            gap: 1.5rem;
             padding: 0.5rem 0;
         }
 
-        .ring-container {
-            position: relative;
-            width: 260px;
-            height: 260px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-        }
-
-        .ring-svg {
-            position: absolute;
-            top: 0;
-            left: 0;
-            transform: rotate(-90deg);
+        .compound-bar-wrapper {
             width: 100%;
+            background: var(--bg-color);
+            border: 1px solid var(--border-color);
+            border-radius: 14px;
+            height: 38px;
+            padding: 4px;
+            display: flex;
+            gap: 3px;
+            overflow: hidden;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.03);
+        }
+
+        .bar-segment {
             height: 100%;
-            overflow: visible;
-            pointer-events: none;
-        }
-
-        .ring-bg {
-            fill: none;
-            stroke: var(--border-color);
-            stroke-width: 14;
-        }
-
-        .ring-progress {
-            fill: none;
-            stroke: var(--accent-terracotta);
-            stroke-width: 14;
-            stroke-linecap: round;
-            transition: stroke-dasharray 0.2s linear, stroke-dashoffset 0.2s linear;
-        }
-
-        .timer-center-btn {
+            border-radius: 10px;
+            transition: width 0.3s linear;
             position: relative;
-            width: 185px;
-            height: 185px;
-            border-radius: 50%;
-            background: var(--card-bg);
-            border: 4px solid var(--border-color);
+            min-width: 4px;
+        }
+
+        .timer-action-panel {
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.06);
-            transition: var(--transition);
-            z-index: 5;
-            pointer-events: auto;
+            gap: 0.75rem;
+            width: 100%;
         }
 
-        .timer-center-btn:hover {
-            transform: scale(1.02);
-            border-color: var(--accent-olive);
-        }
-
-        .timer-state-label {
-            font-size: 0.7rem;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            color: var(--text-muted);
-            font-weight: 600;
-        }
-
-        .timer-display {
-            font-size: 2.25rem;
+        .timer-clock-display {
+            font-size: 2.5rem;
             font-weight: 700;
             font-variant-numeric: tabular-nums;
+            letter-spacing: -0.02em;
         }
 
         .timer-status-text {
@@ -376,6 +340,13 @@
             color: var(--accent-terracotta);
             text-align: center;
             min-height: 1.4rem;
+        }
+
+        .timer-btn-stack {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.75rem;
+            width: 100%;
         }
 
         /* Calendar View */
@@ -734,10 +705,10 @@
 
                     <div id="bean-tips-container" class="bean-tips-box"></div>
 
-                    <button class="btn" style="margin-top: 0.5rem;" onclick="goToStep(2)">Next: Grind & Ratio</button>
+                    <button class="btn" style="margin-top: 0.5rem;" onclick="goToStep(2)">Next: Grind & Parameters</button>
                 </div>
 
-                <!-- Step 2: Grind, Ratio & Temp -->
+                <!-- Step 2: Grind, Ratio, Bloom & Pours -->
                 <div id="step-params" class="step-container step-hidden">
                     <div class="row">
                         <div class="form-group">
@@ -769,7 +740,7 @@
                             </select>
                         </div>
                         <div class="form-group">
-                            <label>Number of Pours</label>
+                            <label>Number of Pour Rounds</label>
                             <input type="number" id="param-pours" min="1" max="10" value="3">
                         </div>
                     </div>
@@ -780,30 +751,30 @@
                     </div>
                 </div>
 
-                <!-- Step 3: Stopwatch Timer -->
+                <!-- Step 3: Compound Bar Timer & Sequential Pours -->
                 <div id="step-timer" class="step-container step-hidden">
                     <div class="timer-view">
-                        <div class="timer-status-text" id="timer-status-instruction">Tap button to Start / Pause / Reset</div>
+                        <div class="timer-status-text" id="timer-status-instruction">Tap 'Start Brew' to begin</div>
                         
-                        <div class="ring-container">
-                            <svg class="ring-svg" viewBox="0 0 100 100" id="stopwatch-svg">
-                                <circle class="ring-bg" cx="50" cy="50" r="42"></circle>
-                                <circle id="stopwatch-progress" class="ring-progress" cx="50" cy="50" r="42" stroke-dasharray="0 264" stroke-dashoffset="0"></circle>
-                            </svg>
-                            <div class="timer-center-btn" onclick="handleTimerButtonPress()">
-                                <span class="timer-state-label" id="timer-action-label">Start</span>
-                                <span class="timer-display" id="timer-clock">0:00</span>
-                            </div>
+                        <div class="timer-clock-display" id="timer-clock">0:00</div>
+
+                        <!-- Compound Horizontal Bar Chart (Single Bar) -->
+                        <div class="compound-bar-wrapper" id="compound-bar-container">
+                            <div class="bar-segment" style="width: 100%; background: var(--border-color); opacity: 0.4;"></div>
                         </div>
 
-                        <div style="font-size: 0.8rem; color: var(--text-muted); text-align: center;" id="timer-params-summary">
-                            Bloom: Yes • 3 Pours
+                        <div class="timer-action-panel">
+                            <div style="font-size: 0.85rem; font-weight: 600; color: var(--text-muted);" id="timer-stage-indicator">Stage: Ready</div>
+                            
+                            <div class="timer-btn-stack">
+                                <button class="btn btn-secondary" id="timer-toggle-btn" onclick="toggleTimerRunning()">Start Brew</button>
+                                <button class="btn" id="timer-action-btn" onclick="handlePourOrFinishPress()" style="background: var(--accent-olive);" disabled>Start Bloom</button>
+                            </div>
                         </div>
                     </div>
 
-                    <div class="button-group">
-                        <button class="btn btn-secondary" onclick="goToStep(2)">Back</button>
-                        <button class="btn" onclick="finishBrewTimer()" style="background: var(--accent-olive);">Finish Brew</button>
+                    <div style="margin-top: 0.5rem;">
+                        <button class="btn btn-secondary btn-small" onclick="goToStep(2)">Back to Parameters</button>
                     </div>
                 </div>
 
@@ -955,6 +926,12 @@
         let stopwatchSeconds = 0;
         let isStopwatchRunning = false;
 
+        // Compound bar flow state
+        let brewStages = []; // array of { name, duration, color }
+        let currentStageIndex = 0;
+        let currentStageSeconds = 0;
+        let stageColors = ['#D4C5B9', '#BC6C25', '#606C38', '#2C2825', '#78716C', '#4A4540'];
+
         let selectedCalendarDateStr = null;
         let brewIdPendingDelete = null;
         let beanNameToEdit = null;
@@ -962,7 +939,6 @@
         let showArchivedBeans = false;
         let rankedBeansCache = [];
         let pendingBrewData = null;
-        const circumference = 264; // 2 * PI * 42
 
         function switchTab(tabId) {
             document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
@@ -1096,42 +1072,104 @@
             activeBrew.bloom = document.getElementById('param-bloom').value;
             activeBrew.pours = parseInt(document.getElementById('param-pours').value) || 3;
 
-            document.getElementById('timer-params-summary').textContent = `Bloom: ${activeBrew.bloom} • ${activeBrew.pours} Pours`;
+            // Build stages
+            brewStages = [];
+            let colorIdx = 0;
+            if (activeBrew.bloom === 'Yes') {
+                brewStages.push({ name: 'Bloom', duration: 0, color: stageColors[colorIdx % stageColors.length] });
+                colorIdx++;
+            }
+            for (let i = 1; i <= activeBrew.pours; i++) {
+                brewStages.push({ name: `Pour ${i}`, duration: 0, color: stageColors[colorIdx % stageColors.length] });
+                colorIdx++;
+            }
 
+            currentStageIndex = 0;
+            currentStageSeconds = 0;
             stopwatchSeconds = 0;
             isStopwatchRunning = false;
             if (stopwatchInterval) clearInterval(stopwatchInterval);
 
-            updateStopwatchUI();
+            // Setup UI states
+            document.getElementById('timer-toggle-btn').textContent = 'Start Brew';
+            document.getElementById('timer-toggle-btn').disabled = false;
+            document.getElementById('timer-action-btn').textContent = activeBrew.bloom === 'Yes' ? 'Start Bloom' : 'Start Pour 1';
+            document.getElementById('timer-action-btn').disabled = true;
+            document.getElementById('timer-stage-indicator').textContent = 'Stage: Ready';
+
+            updateCompoundBarUI();
         }
 
-        function updateStopwatchUI() {
-            const mins = Math.floor(stopwatchSeconds / 60);
-            const secs = stopwatchSeconds % 60;
-            document.getElementById('timer-clock').textContent = `${mins}:${secs < 10 ? '0' : ''}${secs}`;
-            document.getElementById('timer-action-label').textContent = isStopwatchRunning ? 'Pause' : 'Start';
-            document.getElementById('timer-status-instruction').textContent = isStopwatchRunning ? 'Tap center to pause' : 'Tap to start / resume';
-
-            const progressRatio = (stopwatchSeconds % 60) / 60;
-            const strokeLen = circumference * progressRatio;
-            const progressCircle = document.getElementById('stopwatch-progress');
-            progressCircle.setAttribute('stroke-dasharray', `${strokeLen} ${circumference}`);
-            progressCircle.setAttribute('stroke-dashoffset', `${circumference - strokeLen}`);
-        }
-
-        function handleTimerButtonPress() {
+        function toggleTimerRunning() {
             if (!isStopwatchRunning) {
                 isStopwatchRunning = true;
+                document.getElementById('timer-toggle-btn').textContent = 'Pause';
+                document.getElementById('timer-action-btn').disabled = false;
+                
                 if (stopwatchInterval) clearInterval(stopwatchInterval);
                 stopwatchInterval = setInterval(() => {
                     stopwatchSeconds++;
-                    updateStopwatchUI();
+                    currentStageSeconds++;
+                    if (brewStages[currentStageIndex]) {
+                        brewStages[currentStageIndex].duration = currentStageSeconds;
+                    }
+                    updateCompoundBarUI();
                 }, 1000);
             } else {
                 isStopwatchRunning = false;
-                clearInterval(stopwatchInterval);
+                document.getElementById('timer-toggle-btn').textContent = 'Resume';
             }
-            updateStopwatchUI();
+            updateCompoundBarUI();
+        }
+
+        function handlePourOrFinishPress() {
+            if (!isStopwatchRunning) return;
+
+            // Advance to next stage or finish
+            if (currentStageIndex < brewStages.length - 1) {
+                currentStageIndex++;
+                currentStageSeconds = 0;
+                
+                const nextStageName = brewStages[currentStageIndex].name;
+                document.getElementById('timer-action-btn').textContent = `Start ${nextStageName}`;
+                document.getElementById('timer-status-instruction').textContent = `Brewing: ${nextStageName} in progress...`;
+                updateCompoundBarUI();
+            } else {
+                // Final stage finished -> Automatically end timer and proceed to Step 4
+                if (stopwatchInterval) clearInterval(stopwatchInterval);
+                isStopwatchRunning = false;
+                goToStep(4);
+            }
+        }
+
+        function updateCompoundBarUI() {
+            const mins = Math.floor(stopwatchSeconds / 60);
+            const secs = stopwatchSeconds % 60;
+            document.getElementById('timer-clock').textContent = `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+
+            if (isStopwatchRunning && brewStages[currentStageIndex]) {
+                document.getElementById('timer-stage-indicator').textContent = `Current Stage: ${brewStages[currentStageIndex].name} (${currentStageSeconds}s)`;
+                document.getElementById('timer-status-instruction').textContent = `Tap when done with ${brewStages[currentStageIndex].name}`;
+            } else if (!isStopwatchRunning && stopwatchSeconds === 0) {
+                document.getElementById('timer-stage-indicator').textContent = `Stage: Ready`;
+            }
+
+            const container = document.getElementById('compound-bar-container');
+            const totalDuration = Math.max(stopwatchSeconds, 1);
+
+            let html = '';
+            brewStages.forEach((stage, idx) => {
+                if (stage.duration > 0 || idx === currentStageIndex) {
+                    const dur = stage.duration || (idx === currentStageIndex ? currentStageSeconds : 0);
+                    const pct = Math.max((dur / totalDuration) * 100, 3); // ensure at least small visible slice
+                    html += `<div class="bar-segment" style="width: ${pct}%; background: ${stage.color};" title="${stage.name}: ${dur}s"></div>`;
+                }
+            });
+
+            if (!html) {
+                html = `<div class="bar-segment" style="width: 100%; background: var(--border-color); opacity: 0.4;"></div>`;
+            }
+            container.innerHTML = html;
         }
 
         function finishBrewTimer() {
