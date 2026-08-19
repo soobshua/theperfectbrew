@@ -185,18 +185,10 @@
             opacity: 0.95;
         }
 
-        .action-card h3, .action-card p {
-            color: var(--bg-color);
-        }
-
         .action-card h3 {
+            color: var(--bg-color);
             font-size: 1.15rem;
             margin-bottom: 0.25rem;
-        }
-
-        .action-card p {
-            font-size: 0.85rem;
-            opacity: 0.8;
         }
 
         /* Form Controls */
@@ -700,7 +692,6 @@
 
             <div class="action-card" onclick="switchTab('log')">
                 <h3>Log New Cup</h3>
-                <p>Record your parameters, stopwatch timer, and tasting notes</p>
             </div>
         </section>
 
@@ -784,10 +775,10 @@
                                 <circle class="ring-bg" cx="50" cy="50" r="42"></circle>
                                 <circle id="stopwatch-progress" class="ring-progress" cx="50" cy="50" r="42" stroke-dasharray="0 264" stroke-dashoffset="0"></circle>
                             </svg>
-                            <button class="timer-center-btn" onclick="handleTimerButtonPress()">
+                            <div class="timer-center-btn" onclick="handleTimerButtonPress()">
                                 <span class="timer-state-label" id="timer-action-label">Start</span>
                                 <span class="timer-display" id="timer-clock">0:00</span>
-                            </button>
+                            </div>
                         </div>
 
                         <div style="font-size: 0.8rem; color: var(--text-muted); text-align: center;" id="timer-phase-counter">
@@ -922,7 +913,6 @@
         let stopwatchSeconds = 0;
         let isStopwatchRunning = false;
         let phaseCount = 1;
-        let lapTicksAngles = [];
 
         let selectedCalendarDateStr = null;
         let brewIdPendingDelete = null;
@@ -1060,7 +1050,6 @@
             stopwatchSeconds = 0;
             phaseCount = 1;
             isStopwatchRunning = false;
-            lapTicksAngles = [];
 
             // Clear old SVG lap ticks
             const svg = document.getElementById('stopwatch-svg');
@@ -1189,11 +1178,9 @@
             const newName = document.getElementById('edit-bean-input').value.trim();
             if (!newName || !beanNameToEdit) return;
 
-            // Update in db.beans
             const beanObj = db.beans.find(b => b.name === beanNameToEdit);
             if (beanObj) beanObj.name = newName;
 
-            // Update in past brews
             db.brews.forEach(b => {
                 if (b.beanName === beanNameToEdit) {
                     b.beanName = newName;
@@ -1365,16 +1352,43 @@
             if (db.brews.length === 0) {
                 body.innerHTML = `<p>Log some coffee cups to generate your taster profile.</p>`;
             } else {
+                // Extract unique bean names/regions and count roasts & flavors
                 const roastCounts = {};
-                db.brews.forEach(b => roastCounts[b.roast] = (roastCounts[b.roast] || 0) + 1);
-                let topRoast = Object.keys(roastCounts).reduce((a, b) => roastCounts[a] > roastCounts[b] ? a : b);
+                const flavorCounts = {};
+                const regionCounts = {};
+
+                db.brews.forEach(b => {
+                    if (b.roast) roastCounts[b.roast] = (roastCounts[b.roast] || 0) + 1;
+                    
+                    if (b.flavor) {
+                        b.flavor.split(',').forEach(f => {
+                            const cleanF = f.trim();
+                            if (cleanF) flavorCounts[cleanF] = (flavorCounts[cleanF] || 0) + 1;
+                        });
+                    }
+
+                    // Guess region/origin from bean name
+                    const nameLower = b.beanName.toLowerCase();
+                    const regions = ['ethiopia', 'colombia', 'kenya', 'guatemala', 'brazil', 'costa rica', 'sumatra', 'rwanda', 'panama', 'yirgacheffe', 'huila'];
+                    regions.forEach(reg => {
+                        if (nameLower.includes(reg)) {
+                            const formatted = reg.charAt(0).toUpperCase() + reg.slice(1);
+                            regionCounts[formatted] = (regionCounts[formatted] || 0) + 1;
+                        }
+                    });
+                });
+
+                const topRegion = Object.keys(regionCounts).length > 0 ? Object.keys(regionCounts).reduce((a, b) => regionCounts[a] > regionCounts[b] ? a : b) : 'Various / Blends';
+                const topRoast = Object.keys(roastCounts).length > 0 ? Object.keys(roastCounts).reduce((a, b) => roastCounts[a] > roastCounts[b] ? a : b) : 'Medium';
+                const topFlavors = Object.keys(flavorCounts).length > 0 ? Object.keys(flavorCounts).sort((a,b) => flavorCounts[b] - flavorCounts[a]).slice(0, 3).join(', ') : 'None logged';
 
                 body.innerHTML = `
                     <p>Compiled from your <strong>${db.brews.length}</strong> recorded brews:</p>
-                    <ul style="padding-left: 1.25rem; display: flex; flex-direction: column; gap: 0.5rem;">
-                        <li><strong>Preferred Roast:</strong> ${topRoast}</li>
-                        <li><strong>Total Brews Logged:</strong> ${db.brews.length}</li>
-                    </ul>
+                    <ol style="padding-left: 1.25rem; display: flex; flex-direction: column; gap: 0.75rem;">
+                        <li><strong>Preferred Region / Origin:</strong> ${topRegion}</li>
+                        <li><strong>Preferred Roast Level:</strong> ${topRoast}</li>
+                        <li><strong>Top Flavor Notes:</strong> ${topFlavors}</li>
+                    </ol>
                 `;
             }
             modal.classList.add('active');
