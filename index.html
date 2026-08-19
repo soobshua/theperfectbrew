@@ -44,7 +44,7 @@
             margin-bottom: 40px;
         }
 
-        /* Navigation Header - Home on Upper Right */
+        /* Navigation Header */
         .app-header {
             display: flex;
             justify-content: space-between;
@@ -321,15 +321,15 @@
     <div class="app-header">
         <h1>Precision Pour-Over</h1>
         <div class="nav-links">
+            <a id="nav-brew" onclick="attemptNav(1)" class="active">Brew</a>
             <a id="nav-beans" onclick="attemptNav(5)">Beans</a>
             <a id="nav-profile" onclick="attemptNav(6)">Profile</a>
             <a id="nav-history" onclick="attemptNav(4)">History</a>
-            <a id="nav-brew" onclick="attemptNav(1)" class="active">Home</a>
         </div>
     </div>
     <div class="subtitle" id="top-subtitle">Log, Time, and Refine Your Brews</div>
 
-    <!-- STEP 1: BREW PARAMETERS (HOME) -->
+    <!-- STEP 1: BREW PARAMETERS -->
     <div id="step-1" class="step-panel active">
         <div class="form-group">
             <label>Bean Selection</label>
@@ -341,8 +341,8 @@
 
         <div id="new-bean-section" style="display: none; background: #faf8f5; padding: 12px; border-radius: 8px; margin-bottom: 16px; border: 1px solid var(--border-color);">
             <div class="form-group">
-                <label>Bean Name & Country (e.g., Ethiopia Yirgacheffe)</label>
-                <input type="text" id="bean-name" placeholder="e.g. Yirgacheffe (Ethiopia)">
+                <label>Bean Name (e.g. Ethiopia (Yirgacheffe))</label>
+                <input type="text" id="bean-name" placeholder="e.g. Ethiopia (Yirgacheffe)">
             </div>
             <div class="row">
                 <div class="form-group">
@@ -446,14 +446,14 @@
             <textarea id="cup-notes" rows="3" placeholder="Peach, floral, clean finish..."></textarea>
         </div>
 
-        <button onclick="saveBrewSession()">Save & Return Home</button>
+        <button onclick="saveBrewSession()">Save & Return to Brew</button>
     </div>
 
-    <!-- STEP 4: HISTORY (GROUPED BY BEAN) -->
+    <!-- STEP 4: HISTORY -->
     <div id="step-4" class="step-panel">
         <h2 style="font-size: 1.05rem; margin-bottom: 12px; color: var(--accent);">Logged Brew History</h2>
         <div id="history-list-container"></div>
-        <button onclick="attemptNav(1)">Back to Home</button>
+        <button onclick="attemptNav(1)">Back to Brew</button>
     </div>
 
     <!-- STEP 5: BEAN MANAGER -->
@@ -463,7 +463,7 @@
         <div style="background: #faf8f5; padding: 12px; border-radius: 8px; margin-bottom: 16px; border: 1px solid var(--border-color);">
             <div class="form-group" style="margin-bottom: 10px;">
                 <label id="bean-form-title">Add New Bean Inventory</label>
-                <input type="text" id="mgr-name" placeholder="Bean Name & Country (e.g., Yirgacheffe (Ethiopia))">
+                <input type="text" id="mgr-name" placeholder="Name (e.g. Ethiopia (Yirgacheffe))">
             </div>
             <div class="row" style="margin-bottom: 10px;">
                 <div class="form-group" style="margin-bottom:0;">
@@ -486,7 +486,7 @@
             </div>
             <div class="form-group" style="margin-top: 8px;">
                 <label>Specific Tasting Notes</label>
-                <input type="text" id="mgr-flavor" placeholder="e.g. Peach, Chocolate, Vanilla">
+                <input type="text" id="mgr-flavor" placeholder="e.g. Peach, Chocolate">
             </div>
             <input type="hidden" id="mgr-edit-id" value="">
             <button onclick="saveBeanFromManager()" id="mgr-save-btn" style="margin-top: 10px;">Save Bean Profile</button>
@@ -494,14 +494,14 @@
         </div>
 
         <div id="bean-manager-list"></div>
-        <button onclick="attemptNav(1)" style="margin-top: 16px;">Back to Home</button>
+        <button onclick="attemptNav(1)" style="margin-top: 16px;">Back to Brew</button>
     </div>
 
     <!-- STEP 6: COFFEE TASTER PROFILE DASHBOARD -->
     <div id="step-6" class="step-panel">
         <h2 style="font-size: 1.05rem; margin-bottom: 12px; color: var(--accent);">Coffee Taster Profile & Preferences</h2>
         <div id="taster-profile-content"></div>
-        <button onclick="attemptNav(1)" style="margin-top: 16px;">Back to Home</button>
+        <button onclick="attemptNav(1)" style="margin-top: 16px;">Back to Brew</button>
     </div>
 </div>
 
@@ -527,7 +527,37 @@
 
     const phaseColors = ['#8b5a2b', '#c29b61', '#d4b58a', '#e8d5b5', '#6f4520', '#a37042', '#b88654'];
 
-    // Warn before closing browser tab if active
+    const knownCountries = [
+        "ethiopia", "colombia", "columbia", "kenya", "guatemala", "costa rica", 
+        "panama", "brazil", "rwanda", "honduras", "peru", "sumatra", "yemen", 
+        "mexico", "burundi", "el salvador", "vietnam", "indonesia", "tanzania", "colombia"
+    ];
+
+    function getCountryFromBeanName(nameStr) {
+        if (!nameStr) return "Unknown Origin";
+        
+        // 1. Check inside parentheses first (e.g., "Elysian Coffee (Ethiopia)" or "Ethiopia (Yirgacheffe)")
+        const match = nameStr.match(/\(([^)]+)\)/);
+        if (match) {
+            const content = match[1].trim();
+            const lowerContent = content.toLowerCase();
+            for (let c of knownCountries) {
+                if (lowerContent.includes(c)) return c.charAt(0).toUpperCase() + c.slice(1);
+            }
+            // If the text inside parentheses isn't a known country match, use it if it looks like a location/region
+            if (content.length > 2) return content;
+        }
+        
+        // 2. Check whole string for any known country
+        const lowerName = nameStr.toLowerCase();
+        for (let c of knownCountries) {
+            if (lowerName.includes(c)) return c.charAt(0).toUpperCase() + c.slice(1);
+        }
+
+        // 3. Fallback: if no match found anywhere, return the string cleanly or Unknown Origin
+        return nameStr.split('(')[0].trim() || "Unknown Origin";
+    }
+
     window.addEventListener('beforeunload', (e) => {
         if (isStopwatchRunning || currentStep === 2) {
             e.preventDefault();
@@ -537,7 +567,7 @@
 
     function attemptNav(stepNum) {
         if (currentStep === 2 && stepNum !== 2) {
-            if (!confirm("Are you sure you want to leave this page? Active timer progress will be lost.")) return;
+            if (!confirm("Are you sure you want to leave? Active timer will be lost.")) return;
             if (stopwatchInterval) clearInterval(stopwatchInterval);
             isStopwatchRunning = false;
         }
@@ -551,19 +581,9 @@
 
         document.querySelectorAll('.nav-links a').forEach(a => a.classList.remove('active'));
         if (stepNum === 1 || stepNum === 2 || stepNum === 3) document.getElementById('nav-brew').classList.add('active');
-        if (stepNum === 4) document.getElementById('nav-history').classList.add('active');
         if (stepNum === 5) document.getElementById('nav-beans').classList.add('active');
         if (stepNum === 6) document.getElementById('nav-profile').classList.add('active');
-
-        const subtitles = {
-            1: "Log, Time, and Refine Your Brews",
-            2: "Manual Checkpoint Stopwatch Mode",
-            3: "Performance Insights & Cup Optimization",
-            4: "Grouped Brew History & Best Cup Stats",
-            5: "Organize, Edit, and Archive Your Bean Stash",
-            6: "Your Analytical Taster Dashboard & Ranked Preferences"
-        };
-        document.getElementById('top-subtitle').textContent = subtitles[stepNum];
+        if (stepNum === 4) document.getElementById('nav-history').classList.add('active');
 
         if (stepNum === 1) updateBeanSelectDropdown();
         if (stepNum === 2) initStopwatchSession();
@@ -575,66 +595,34 @@
     function updateBeanSelectDropdown(selectedName = "") {
         const select = document.getElementById('bean-select');
         select.innerHTML = '<option value="" disabled selected>-- Select a Bean Profile --</option>';
-
-        const activeBeans = db.beans.filter(b => !b.archived);
-        activeBeans.forEach((b) => {
+        db.beans.filter(b => !b.archived).forEach((b) => {
             const opt = document.createElement('option');
             opt.value = b.id;
-            opt.textContent = `${b.name} (${b.roast} - ${b.flavorType || 'Fruity'})`;
-            if (b.name === selectedName) opt.selected = true;
+            opt.textContent = `${b.name} (${b.roast})`;
             select.appendChild(opt);
         });
-
-        const newOpt = document.createElement('option');
-        newOpt.value = 'new';
-        newOpt.textContent = '+ Add New Bean Profile';
-        select.appendChild(newOpt);
-
+        select.innerHTML += '<option value="new">+ Add New Bean Profile</option>';
         checkBeanSelect();
     }
 
     function checkBeanSelect() {
         const val = document.getElementById('bean-select').value;
-        const newSec = document.getElementById('new-bean-section');
-        const btn = document.getElementById('proceed-brew-btn');
-
-        if (val === 'new') {
-            newSec.style.display = 'block';
-            btn.disabled = false;
-        } else if (val === '') {
-            newSec.style.display = 'none';
-            btn.disabled = true;
-        } else {
-            newSec.style.display = 'none';
-            btn.disabled = false;
-        }
+        document.getElementById('new-bean-section').style.display = (val === 'new') ? 'block' : 'none';
+        document.getElementById('proceed-brew-btn').disabled = (val === '');
     }
 
     function startTimerSetup() {
-        const val = document.getElementById('bean-select').value;
-        if (val === '') return;
+        if (document.getElementById('bean-select').value === '') return;
         goToStep(2);
     }
 
-    // Bean Manager & Edit Fix
     function renderBeanManager() {
         const container = document.getElementById('bean-manager-list');
-        if (db.beans.length === 0) {
-            container.innerHTML = '<p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom:16px;">No beans added yet.</p>';
-            return;
-        }
-
-        let html = '';
+        container.innerHTML = db.beans.length === 0 ? '<p style="font-size: 0.85rem; color: var(--text-muted);">No beans added.</p>' : '';
         db.beans.forEach((b) => {
-            html += `
-                <div class="item-card" style="${b.archived ? 'opacity: 0.6; background: #faf8f5;' : ''}">
-                    <div class="item-card-header">
-                        <strong>${b.name}</strong>
-                        <span class="badge">${b.roast} | ${b.flavorType || 'Fruity'} ${b.archived ? '(Archived)' : ''}</span>
-                    </div>
-                    <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 6px;">
-                        Notes: ${b.flavor || 'None'}
-                    </div>
+            container.innerHTML += `
+                <div class="item-card" style="${b.archived ? 'opacity:0.6' : ''}">
+                    <div class="item-card-header"><strong>${b.name}</strong><span class="badge">${b.roast}</span></div>
                     <div class="card-actions">
                         <button onclick="editBean('${b.id}')">Edit</button>
                         <button onclick="toggleArchiveBean('${b.id}')" class="danger">${b.archived ? 'Unarchive' : 'Archive'}</button>
@@ -642,7 +630,6 @@
                 </div>
             `;
         });
-        container.innerHTML = html;
     }
 
     function saveBeanFromManager() {
@@ -652,24 +639,13 @@
         const flavor = document.getElementById('mgr-flavor').value.trim();
         const editId = document.getElementById('mgr-edit-id').value;
 
-        if (!name) {
-            alert('Please enter a bean name and origin.');
-            return;
-        }
-
+        if (!name) return alert('Name required.');
         if (!editId) {
-            const newBean = { id: 'bean_' + Date.now(), name, roast, flavorType, flavor, archived: false };
-            db.beans.push(newBean);
+            db.beans.push({ id: 'b_' + Date.now(), name, roast, flavorType, flavor, archived: false });
         } else {
             const b = db.beans.find(x => x.id === editId);
-            if (b) {
-                b.name = name;
-                b.roast = roast;
-                b.flavorType = flavorType;
-                b.flavor = flavor;
-            }
+            Object.assign(b, { name, roast, flavorType, flavor });
         }
-
         persistData();
         resetBeanManagerForm();
         renderBeanManager();
@@ -677,357 +653,116 @@
 
     function editBean(id) {
         const b = db.beans.find(x => x.id === id);
-        if (!b) return;
         document.getElementById('mgr-name').value = b.name;
         document.getElementById('mgr-roast').value = b.roast;
-        document.getElementById('mgr-flavor-type').value = b.flavorType || 'Fruity';
-        document.getElementById('mgr-flavor').value = b.flavor || '';
         document.getElementById('mgr-edit-id').value = id;
-        document.getElementById('bean-form-title').textContent = 'Edit Bean Profile';
-        document.getElementById('mgr-save-btn').textContent = 'Update Bean Profile';
+        document.getElementById('mgr-save-btn').textContent = 'Update';
         document.getElementById('mgr-cancel-btn').style.display = 'block';
     }
 
     function resetBeanManagerForm() {
         document.getElementById('mgr-name').value = '';
-        document.getElementById('mgr-flavor').value = '';
         document.getElementById('mgr-edit-id').value = '';
-        document.getElementById('bean-form-title').textContent = 'Add New Bean Inventory';
         document.getElementById('mgr-save-btn').textContent = 'Save Bean Profile';
         document.getElementById('mgr-cancel-btn').style.display = 'none';
     }
 
     function toggleArchiveBean(id) {
         const b = db.beans.find(x => x.id === id);
-        if (b) {
-            b.archived = !b.archived;
-            persistData();
-            renderBeanManager();
-        }
+        b.archived = !b.archived;
+        persistData();
+        renderBeanManager();
     }
 
-    // Stopwatch & Auto-Log
     function initStopwatchSession() {
-        const beanVal = document.getElementById('bean-select').value;
-        if (beanVal === 'new') {
-            const name = document.getElementById('bean-name').value.trim() || 'Custom Bean (Ethiopia)';
-            const roast = document.getElementById('bean-roast').value;
-            const flavorType = document.getElementById('bean-flavor-type').value;
-            const flavor = document.getElementById('bean-flavor').value.trim();
-            
-            const newBean = { id: 'bean_' + Date.now(), name, roast, flavorType, flavor, archived: false };
-            db.beans.push(newBean);
-            persistData();
+        const val = document.getElementById('bean-select').value;
+        if (val === 'new') {
+            const name = document.getElementById('bean-name').value.trim() || 'Kenya Nyeri';
+            db.beans.push({ id: 'b_' + Date.now(), name, roast: document.getElementById('bean-roast').value, flavorType: document.getElementById('bean-flavor-type').value, flavor: document.getElementById('bean-flavor').value, archived: false });
             activeBrew.beanName = name;
         } else {
-            const b = db.beans.find(x => x.id === beanVal);
-            activeBrew.beanName = b ? b.name : 'Unknown Bean';
+            activeBrew.beanName = db.beans.find(x => x.id === val).name;
         }
-
-        activeBrew.grind = parseFloat(document.getElementById('param-grind').value) || 21;
-        activeBrew.temp = parseFloat(document.getElementById('param-temp').value) || 92;
-        activeBrew.coffee = parseFloat(document.getElementById('param-coffee').value) || 15;
-        activeBrew.water = parseFloat(document.getElementById('param-water').value) || 250;
+        activeBrew.grind = document.getElementById('param-grind').value;
+        activeBrew.temp = document.getElementById('param-temp').value;
+        activeBrew.coffee = document.getElementById('param-coffee').value;
+        activeBrew.water = document.getElementById('param-water').value;
         activeBrew.bloom = document.getElementById('param-bloom').value;
-        activeBrew.pours = parseInt(document.getElementById('param-pours').value) || 3;
-
-        brewPhases = [];
-        let colorIdx = 0;
-
-        if (activeBrew.bloom === 'Yes') {
-            brewPhases.push({ name: 'Bloom', duration: 0, color: phaseColors[colorIdx++ % phaseColors.length] });
-            brewPhases.push({ name: 'Bloom Pause', duration: 0, color: phaseColors[colorIdx++ % phaseColors.length] });
-        }
-
-        for (let i = 1; i <= activeBrew.pours; i++) {
-            brewPhases.push({ name: `Pour ${i}`, duration: 0, color: phaseColors[colorIdx++ % phaseColors.length] });
-            if (i < activeBrew.pours) {
-                brewPhases.push({ name: `Pause ${i}`, duration: 0, color: phaseColors[colorIdx++ % phaseColors.length] });
-            }
-        }
-
-        brewPhases.push({ name: 'Final Drawdown', duration: 0, color: phaseColors[colorIdx++ % phaseColors.length] });
-
-        currentPhaseIndex = 0;
-        currentPhaseSeconds = 0;
-        stopwatchSeconds = 0;
-        isStopwatchRunning = false;
-        if (stopwatchInterval) clearInterval(stopwatchInterval);
-
-        const actionBtn = document.getElementById('timer-action-btn');
-        actionBtn.style.width = '100%';
-        actionBtn.disabled = false;
-        actionBtn.textContent = `Start ${brewPhases[0].name}`;
+        activeBrew.pours = document.getElementById('param-pours').value;
         
-        document.getElementById('timer-stage-indicator').textContent = 'Stage: Ready';
-        document.getElementById('timer-status-instruction').textContent = `Tap to start ${brewPhases[0].name}`;
+        brewPhases = [{name: 'Bloom', duration: 0, color: '#8b5a2b'}];
+        for(let i=0; i<parseInt(activeBrew.pours); i++) brewPhases.push({name: 'Pour '+ (i+1), duration: 0, color: '#c29b61'});
+        brewPhases.push({name: 'Drawdown', duration: 0, color: '#d4b58a'});
 
-        updateCompoundBarUI();
+        currentPhaseIndex = 0; currentPhaseSeconds = 0; stopwatchSeconds = 0; isStopwatchRunning = false;
     }
 
     function handlePourOrFinishPress() {
         if (!isStopwatchRunning) {
             isStopwatchRunning = true;
-            if (stopwatchInterval) clearInterval(stopwatchInterval);
-            
             stopwatchInterval = setInterval(() => {
                 stopwatchSeconds++;
                 currentPhaseSeconds++;
-                if (brewPhases[currentPhaseIndex]) {
-                    brewPhases[currentPhaseIndex].duration = currentPhaseSeconds;
-                }
-                updateCompoundBarUI();
+                document.getElementById('timer-clock').textContent = Math.floor(stopwatchSeconds/60) + ':' + (stopwatchSeconds%60).toString().padStart(2,'0');
             }, 1000);
-
-            currentPhaseIndex++;
-            if (currentPhaseIndex < brewPhases.length) {
-                document.getElementById('timer-action-btn').textContent = `Start ${brewPhases[currentPhaseIndex].name}`;
-                document.getElementById('timer-status-instruction').textContent = `Active: ${brewPhases[currentPhaseIndex - 1].name} in progress...`;
-            } else {
-                document.getElementById('timer-action-btn').textContent = `Complete Brew`;
-            }
-            updateCompoundBarUI();
-            return;
-        }
-
-        if (currentPhaseIndex < brewPhases.length) {
-            brewPhases[currentPhaseIndex - 1].duration = currentPhaseSeconds;
+            document.getElementById('timer-action-btn').textContent = 'Next Stage';
+        } else if (currentPhaseIndex < brewPhases.length - 1) {
+            brewPhases[currentPhaseIndex].duration = currentPhaseSeconds;
             currentPhaseSeconds = 0;
-            
-            const activePhase = brewPhases[currentPhaseIndex];
-            document.getElementById('timer-status-instruction').textContent = `Active: ${activePhase.name} in progress...`;
-
             currentPhaseIndex++;
-            if (currentPhaseIndex < brewPhases.length) {
-                document.getElementById('timer-action-btn').textContent = `Start ${brewPhases[currentPhaseIndex].name}`;
-            } else {
-                document.getElementById('timer-action-btn').textContent = `Complete Brew`;
-            }
+            document.getElementById('timer-stage-indicator').textContent = 'Stage: ' + brewPhases[currentPhaseIndex].name;
         } else {
-            if (stopwatchInterval) clearInterval(stopwatchInterval);
+            clearInterval(stopwatchInterval);
             isStopwatchRunning = false;
-            brewPhases[brewPhases.length - 1].duration = currentPhaseSeconds;
-            
-            generateAnalyticsSuggestions();
             goToStep(3);
         }
-        updateCompoundBarUI();
-    }
-
-    function updateCompoundBarUI() {
-        const mins = Math.floor(stopwatchSeconds / 60);
-        const secs = stopwatchSeconds % 60;
-        document.getElementById('timer-clock').textContent = `${mins}:${secs < 10 ? '0' : ''}${secs}`;
-        document.getElementById('total-logged-time').textContent = `${stopwatchSeconds}s total`;
-
-        if (isStopwatchRunning && currentPhaseIndex > 0 && currentPhaseIndex <= brewPhases.length) {
-            const activeName = brewPhases[currentPhaseIndex - 1].name;
-            document.getElementById('timer-stage-indicator').textContent = `${activeName}: ${currentPhaseSeconds}s`;
-        } else if (!isStopwatchRunning && stopwatchSeconds === 0) {
-            document.getElementById('timer-stage-indicator').textContent = `Stage: Ready`;
-        }
-
-        const container = document.getElementById('compound-bar-container');
-        const totalDuration = Math.max(stopwatchSeconds, 1);
-
-        let html = '';
-        brewPhases.forEach((phase, idx) => {
-            const dur = phase.duration || (isStopwatchRunning && idx === currentPhaseIndex - 1 ? currentPhaseSeconds : 0);
-            if (dur > 0) {
-                const pct = Math.max((dur / totalDuration) * 100, 3);
-                html += `<div class="bar-segment" style="width: ${pct}%; background: ${phase.color};" title="${phase.name}: ${dur}s"></div>`;
-            }
-        });
-
-        if (!html) {
-            html = `<div class="bar-segment" style="width: 100%; background: var(--border-color); opacity: 0.4;"></div>`;
-        }
-        container.innerHTML = html;
-    }
-
-    function generateAnalyticsSuggestions() {
-        let suggestionsHTML = '';
-        const bloomPhase = brewPhases.find(p => p.name === 'Bloom');
-        const bloomDur = bloomPhase ? bloomPhase.duration : 0;
-        const drawdownPhase = brewPhases.find(p => p.name === 'Final Drawdown');
-        const drawdownDur = drawdownPhase ? drawdownPhase.duration : 0;
-
-        if (bloomDur > 45) {
-            suggestionsHTML += `<div class="suggestion-card">💡 <strong>Tip to Optimise:</strong> Change Parameter Grind & Bloom duration; try shortening the bloom by 10s to improve extraction clarity.</div>`;
-        } else if (bloomDur > 0 && bloomDur < 25) {
-            suggestionsHTML += `<div class="suggestion-card">💡 <strong>Tip to Optimise:</strong> Change Parameter Water Temp & Bloom duration; extend your bloom slightly to improve degassing and sweetness.</div>`;
-        }
-
-        if (drawdownDur > 90) {
-            suggestionsHTML += `<div class="suggestion-card">💡 <strong>Tip to Optimise:</strong> Change Parameter Grind (coarser by 2-3 clicks) to improve drawdown speed and reduce bitterness.</div>`;
-        } else if (drawdownDur > 0 && drawdownDur < 35) {
-            suggestionsHTML += `<div class="suggestion-card">💡 <strong>Tip to Optimise:</strong> Change Parameter Grind (finer by 2 clicks) to improve body and avoid watery extraction.</div>`;
-        }
-
-        if (!suggestionsHTML) {
-            suggestionsHTML = `<div class="suggestion-card">✨ <strong>Great Brew Profile!</strong> Your extraction parameters and pouring timing landed within ideal extraction specs.</div>`;
-        }
-
-        document.getElementById('analytics-suggestions-box').innerHTML = suggestionsHTML;
     }
 
     function saveBrewSession() {
-        activeBrew.score = parseFloat(document.getElementById('cup-score').value) || 8.0;
+        activeBrew.score = parseFloat(document.getElementById('cup-score').value);
         activeBrew.notes = document.getElementById('cup-notes').value;
-        activeBrew.phases = [...brewPhases];
-        activeBrew.totalTime = stopwatchSeconds;
         activeBrew.date = new Date().toLocaleDateString();
-        activeBrew.id = 'session_' + Date.now();
-
         db.sessions.unshift(activeBrew);
         persistData();
         goToStep(1);
     }
 
-    // History grouped by bean with Best Cup stats & Edit support
     function renderHistoryList() {
         const container = document.getElementById('history-list-container');
-        if (db.sessions.length === 0) {
-            container.innerHTML = '<p style="font-size: 0.85rem; color: var(--text-muted);">No archived brews found.</p>';
-            return;
-        }
+        container.innerHTML = db.sessions.map(s => `<div class="item-card"><strong>${s.beanName}</strong><br>Score: ${s.score}/10 | ${s.date}</div>`).join('');
+    }
 
-        // Group sessions by beanName
-        const groups = {};
+    function renderTasterProfile() {
+        const noteCounts = {};
+        const countryCounts = {};
+        const stopWords = new Set(["good", "light", "refreshing", "clean", "nice", "sweet", "bitter"]);
+
         db.sessions.forEach(s => {
-            const bName = s.beanName || 'Unknown Bean';
-            if (!groups[bName]) groups[bName] = [];
-            groups[bName].push(s);
-        });
+            const country = getCountryFromBeanName(s.beanName);
+            countryCounts[country] = (countryCounts[country] || 0) + 1;
 
-        let html = '';
-        Object.keys(groups).forEach(beanName => {
-            const sessions = groups[beanName];
-            const avgScore = sessions.reduce((acc, s) => acc + s.score, 0) / sessions.length;
-            // Find best cup in this group
-            const bestCup = sessions.reduce((best, s) => s.score > best.score ? s : best, sessions[0]);
-
-            html += `<div class="group-header">☕ ${beanName}</div>`;
-            html += `<div style="font-size: 0.8rem; color: var(--accent); font-weight:600; margin-bottom: 6px;">Score: ${avgScore.toFixed(2)}/10 (avg over ${sessions.length} cup${sessions.length > 1 ? 's' : ''})</div>`;
-            
-            if (bestCup) {
-                const pourSummary = bestCup.phases ? bestCup.phases.map(p => `${p.name}: ${p.duration}s`).join(' | ') : '';
-                html += `
-                    <div style="background: #faf8f5; border: 1px solid var(--border-color); border-radius: 6px; padding: 8px 12px; font-size: 0.78rem; margin-bottom: 8px;">
-                        🏆 <strong>Best Cup Stats:</strong> Grind: ${bestCup.grind} | Temp: ${bestCup.temp}°C | Water: ${bestCup.water}g | Total: ${bestCup.totalTime}s (${bestCup.pours} pours, Bloom: ${bestCup.bloom})<br>
-                        <em>Phases: ${pourSummary}</em>
-                    </div>
-                `;
-            }
-
-            sessions.forEach(s => {
-                html += `
-                    <div class="item-card" id="history-card-${s.id}">
-                        <div class="item-card-header">
-                            <span>Score: <strong>${s.score.toFixed(1)}/10</strong> (${s.date})</span>
-                        </div>
-                        <div style="color:var(--text-muted); font-size:0.8rem; margin-bottom:6px;">
-                            Grind: ${s.grind} | Temp: ${s.temp}°C | Water: ${s.water}g | Total: ${s.totalTime}s (${s.pours} pours, Bloom: ${s.bloom})
-                        </div>
-                        <div style="font-style:italic; font-size:0.8rem; margin-bottom:6px;">"${s.notes || 'No notes'}"</div>
-                        <div class="card-actions">
-                            <button onclick="editHistorySession('${s.id}')">Edit Log</button>
-                        </div>
-                    </div>
-                `;
+            (s.notes || '').split(',').forEach(n => {
+                const note = n.trim().toLowerCase();
+                if (note && !stopWords.has(note)) noteCounts[note] = (noteCounts[note] || 0) + 1;
             });
         });
 
-        container.innerHTML = html;
-    }
+        const topCountry = Object.keys(countryCounts).length > 0 
+            ? Object.keys(countryCounts).reduce((a, b) => countryCounts[a] > countryCounts[b] ? a : b) 
+            : 'None Recorded';
 
-    function editHistorySession(id) {
-        const s = db.sessions.find(x => x.id === id);
-        if (!s) return;
-        const card = document.getElementById(`history-card-${id}`);
-        card.innerHTML = `
-            <div class="form-group" style="margin-bottom:8px;">
-                <label>Edit Score (1 - 10)</label>
-                <input type="number" id="edit-score-${id}" value="${s.score}" min="1" max="10" step="0.1">
-            </div>
-            <div class="form-group" style="margin-bottom:8px;">
-                <label>Edit Tasting Notes</label>
-                <input type="text" id="edit-notes-${id}" value="${s.notes || ''}">
-            </div>
-            <div class="card-actions">
-                <button onclick="saveEditedSession('${id}')">Save</button>
-                <button onclick="renderHistoryList()" class="danger">Cancel</button>
-            </div>
-        `;
-    }
+        const sortedNotes = Object.keys(noteCounts).sort((a, b) => noteCounts[b] - noteCounts[a]).slice(0, 3);
 
-    function saveEditedSession(id) {
-        const s = db.sessions.find(x => x.id === id);
-        if (s) {
-            s.score = parseFloat(document.getElementById(`edit-score-${id}`).value) || s.score;
-            s.notes = document.getElementById(`edit-notes-${id}`).value;
-            persistData();
-            renderHistoryList();
-        }
-    }
-
-    // Taster Profile Dashboard
-    function renderTasterProfile() {
-        const container = document.getElementById('taster-profile-content');
-        if (db.sessions.length === 0) {
-            container.innerHTML = '<p style="font-size: 0.85rem; color: var(--text-muted);">No completed brews recorded yet. Log some cups to generate your profile!</p>';
-            return;
-        }
-
-        const roastCounts = {};
-        const countryCounts = {};
-        const noteCounts = {};
-
-        db.sessions.forEach(s => {
-            const matchingBean = db.beans.find(b => b.name === s.beanName) || {};
-            const roast = matchingBean.roast || 'Light';
-            const flavorTag = matchingBean.flavorType || 'Fruity';
-            const roastKey = `${roast} + ${flavorTag}`;
-            roastCounts[roastKey] = (roastCounts[roastKey] || 0) + 1;
-
-            // Extract country inside parentheses or fallback
-            const nameStr = s.beanName || '';
-            const match = nameStr.match(/\(([^)]+)\)/);
-            const country = match ? match[1].trim() : 'Ethiopia';
-            countryCounts[country] = (countryCounts[country] || 0) + 1;
-
-            if (s.notes) {
-                s.notes.split(',').forEach(n => {
-                    const cleanNote = n.trim().toLowerCase();
-                    if (cleanNote) {
-                        noteCounts[cleanNote] = (noteCounts[cleanNote] || 0) + 1;
-                    }
-                });
-            }
-        });
-
-        const favRoast = Object.keys(roastCounts).reduce((a, b) => roastCounts[a] > roastCounts[b] ? a : b, 'Light + Fruity');
-        const favCountry = Object.keys(countryCounts).reduce((a, b) => countryCounts[a] > countryCounts[b] ? a : b, 'Ethiopia');
-
-        const sortedNotes = Object.keys(noteCounts).sort((a, b) => noteCounts[b] - noteCounts[a]);
-        const top3Notes = sortedNotes.slice(0, 3);
-
-        container.innerHTML = `
-            <div class="profile-stat-box">
-                <h3>☕ Favorite Roast Style</h3>
-                <p><strong>${favRoast}</strong></p>
-            </div>
+        document.getElementById('taster-profile-content').innerHTML = `
             <div class="profile-stat-box">
                 <h3>🌍 Favorite Origin Country</h3>
-                <p><strong>${favCountry.charAt(0).toUpperCase() + favCountry.slice(1)}</strong></p>
+                <p><strong>${topCountry}</strong></p>
             </div>
             <div class="profile-stat-box">
                 <h3>🏆 Top 3 Ranked Tasting Notes</h3>
-                ${top3Notes.length > 0 ? `
-                    <ol class="ranked-list">
-                        ${top3Notes.map((n, idx) => `<li><strong>${idx + 1}. ${n.charAt(0).toUpperCase() + n.slice(1)}</strong> (${noteCounts[n]} occurrences)</li>`).join('')}
-                    </ol>
-                ` : '<p style="font-size:0.8rem; color:var(--text-muted);">No notes recorded yet.</p>'}
+                <ol class="ranked-list">
+                    ${sortedNotes.length > 0 ? sortedNotes.map(n => `<li><strong>${n}</strong></li>`).join('') : '<p style="font-size:0.8rem; color:var(--text-muted);">No specific tasting notes recorded yet.</p>'}
+                </ol>
             </div>
         `;
     }
