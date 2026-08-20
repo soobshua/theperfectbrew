@@ -400,22 +400,26 @@
                     <option value="No">No</option>
                 </select>
             </div>
+            <div class="form-group">
+                <label>Number of Pours</label>
+                <input type="number" id="param-pours" min="0" value="2">
+            </div>
         </div>
 
         <button onclick="startTimerSetup()" id="proceed-brew-btn" disabled>Proceed to Stopwatch</button>
     </div>
 
-    <!-- STEP 2: DYNAMIC CLICK-TO-ADVANCE TIMER -->
+    <!-- STEP 2: PRE-SET PHASE TIMER -->
     <div id="step-2" class="step-panel">
         <div class="timer-display-box">
             <div id="timer-clock">0:00</div>
             <div id="timer-stage-indicator">Stage: Ready</div>
-            <div id="timer-status-instruction">Tap below to start & add phases on demand</div>
+            <div id="timer-status-instruction">Tap below to start phase</div>
         </div>
 
         <div class="compound-bar-wrapper">
             <div class="compound-bar-label">
-                <span>Dynamic Phase Progression Bar</span>
+                <span>Phase Progression Bar</span>
                 <span id="total-logged-time">0s elapsed</span>
             </div>
             <div id="compound-bar-container">
@@ -423,8 +427,7 @@
             </div>
         </div>
 
-        <button id="timer-action-btn" onclick="handleDynamicPhaseClick()">Start Timer</button>
-        <button id="timer-finish-btn" onclick="finishDynamicBrew()" style="display: none; background: #5a7d5c; margin-top: 6px;">Finish & Rate Brew</button>
+        <button id="timer-action-btn" onclick="handlePresetPhaseClick()">Start Timer</button>
         <button onclick="attemptNav(1)" style="background: transparent; color: var(--text-muted); border: 1px solid var(--border-color); margin-top: 8px;">Cancel / Edit Params</button>
     </div>
 
@@ -562,7 +565,7 @@
         if (stepNum === 4) document.getElementById('nav-history').classList.add('active');
 
         if (stepNum === 1) updateBeanSelectDropdown();
-        if (stepNum === 2) initDynamicTimerSession();
+        if (stepNum === 2) initPresetTimerSession();
         if (stepNum === 4) renderHistoryContent();
         if (stepNum === 5) renderBeanManager();
         if (stepNum === 6) renderPreferredProfile();
@@ -589,11 +592,21 @@
 
     function startTimerSetup() {
         if (document.getElementById('bean-select').value === '') return;
+
+        const bloom = document.getElementById('param-bloom').value;
+        const pours = parseInt(document.getElementById('param-pours').value) || 0;
+
+        // Anti-troll rule check
+        if (bloom === 'No' && pours === 0) {
+            alert("Sorry, no trolls allowed");
+            document.getElementById('param-pours').value = 2;
+            return;
+        }
+
         goToStep(2);
     }
 
-    // Initialize Timer with 2 initial phases (Bloom/Pour 1 + Drawdown)
-    function initDynamicTimerSession() {
+    function initPresetTimerSession() {
         const val = document.getElementById('bean-select').value;
         let matchedBean = null;
         if (val === 'new') {
@@ -620,14 +633,23 @@
         activeBrew.coffee = document.getElementById('param-coffee').value;
         activeBrew.water = document.getElementById('param-water').value;
         activeBrew.bloom = document.getElementById('param-bloom').value;
+        activeBrew.pours = parseInt(document.getElementById('param-pours').value) || 2;
         
         brewPhases = [];
         
+        // Build sequence phases
         if (activeBrew.bloom === 'Yes') {
             brewPhases.push({ name: 'Bloom', duration: 0, color: '#8b5a2b' });
-        } else {
-            brewPhases.push({ name: 'Pour 1', duration: 0, color: '#8b5a2b' });
         }
+
+        for (let i = 1; i <= activeBrew.pours; i++) {
+            if (brewPhases.length > 0) {
+                brewPhases.push({ name: 'Extracting', duration: 0, color: '#b58a5a' });
+            }
+            brewPhases.push({ name: `Pour ${i}`, duration: 0, color: '#c29b61' });
+        }
+
+        // Final phase is always Drawdown
         brewPhases.push({ name: 'Drawdown', duration: 0, color: '#d4b58a' });
 
         currentPhaseIndex = 0;
@@ -638,12 +660,11 @@
         document.getElementById('timer-stage-indicator').textContent = 'Stage: ' + brewPhases[0].name;
         document.getElementById('timer-status-instruction').textContent = 'Tap to start timer & begin phase';
         document.getElementById('timer-action-btn').textContent = 'Start Timer';
-        document.getElementById('timer-finish-btn').style.display = 'none';
         document.getElementById('total-logged-time').textContent = '0s elapsed';
-        updateDynamicCompoundBar();
+        updatePresetCompoundBar();
     }
 
-    function handleDynamicPhaseClick() {
+    function handlePresetPhaseClick() {
         if (!isTimerRunning) {
             isTimerRunning = true;
             totalSecondsElapsed = 0;
@@ -656,49 +677,43 @@
                 
                 let activeDur = totalSecondsElapsed - brewPhases.slice(0, currentPhaseIndex).reduce((a, b) => a + b.duration, 0);
                 brewPhases[currentPhaseIndex].duration = activeDur > 0 ? activeDur : 1;
-                updateDynamicCompoundBar();
+                updatePresetCompoundBar();
             }, 1000);
 
-            document.getElementById('timer-status-instruction').textContent = 'Tap below to add another pour stage on-the-fly';
-            document.getElementById('timer-action-btn').textContent = 'Add Pour Stage';
-            document.getElementById('timer-finish-btn').style.display = 'block';
+            document.getElementById('timer-status-instruction').textContent = 'Tap to advance to next stage';
+            document.getElementById('timer-action-btn').textContent = 'Next Stage (' + brewPhases[1].name + ')';
         } else {
             // Snapshot duration of current phase
             let activeDur = totalSecondsElapsed - brewPhases.slice(0, currentPhaseIndex).reduce((a, b) => a + b.duration, 0);
             brewPhases[currentPhaseIndex].duration = activeDur > 0 ? activeDur : 1;
 
-            // Insert a new pour stage right before the final drawdown stage
-            const pourCount = brewPhases.filter(p => p.name.includes('Pour')).length + 1;
-            const newPour = { name: `Pour ${pourCount}`, duration: 0, color: '#c29b61' };
-            
-            brewPhases.splice(brewPhases.length - 1, 0, newPour);
             currentPhaseIndex++;
-            
-            document.getElementById('timer-stage-indicator').textContent = 'Stage: ' + brewPhases[currentPhaseIndex].name;
+
+            // Check if we finished all phases
+            if (currentPhaseIndex >= brewPhases.length) {
+                clearInterval(timerInterval);
+                isTimerRunning = false;
+                document.getElementById('timer-stage-indicator').textContent = 'Brew Complete!';
+                document.getElementById('timer-status-instruction').textContent = 'All sequence phases captured.';
+                document.getElementById('timer-action-btn').textContent = 'Proceed to Rating & Notes';
+                document.getElementById('timer-action-btn').onclick = () => {
+                    generateSuggestions(activeBrew);
+                    goToStep(3);
+                };
+            } else {
+                document.getElementById('timer-stage-indicator').textContent = 'Stage: ' + brewPhases[currentPhaseIndex].name;
+                const nextPhase = brewPhases[currentPhaseIndex + 1];
+                if (nextPhase) {
+                    document.getElementById('timer-action-btn').textContent = 'Next Stage (' + nextPhase.name + ')';
+                } else {
+                    document.getElementById('timer-action-btn').textContent = 'Finish Brew';
+                }
+            }
         }
-        updateDynamicCompoundBar();
+        updatePresetCompoundBar();
     }
 
-    function finishDynamicBrew() {
-        if (timerInterval) clearInterval(timerInterval);
-        isTimerRunning = false;
-
-        // Snapshot current active phase duration
-        let activeDur = totalSecondsElapsed - brewPhases.slice(0, currentPhaseIndex).reduce((a, b) => a + b.duration, 0);
-        brewPhases[currentPhaseIndex].duration = activeDur > 0 ? activeDur : 1;
-
-        document.getElementById('timer-stage-indicator').textContent = 'Brew Complete!';
-        document.getElementById('timer-status-instruction').textContent = 'All phases captured.';
-        document.getElementById('timer-action-btn').style.display = 'none';
-        document.getElementById('timer-finish-btn').textContent = 'Proceed to Rating & Notes';
-        document.getElementById('timer-finish-btn').onclick = () => {
-            generateSuggestions(activeBrew);
-            goToStep(3);
-        };
-        updateDynamicCompoundBar();
-    }
-
-    function updateDynamicCompoundBar() {
+    function updatePresetCompoundBar() {
         const container = document.getElementById('compound-bar-container');
         container.innerHTML = '';
         
@@ -706,22 +721,23 @@
         if (runningTotal < 1) runningTotal = 1;
 
         brewPhases.forEach((p, idx) => {
-            let dur = p.duration > 0 ? p.duration : (idx === currentPhaseIndex && isTimerRunning ? (totalSecondsElapsed - brewPhases.slice(0, idx).reduce((a,b)=>a+b.duration,0)) : 5);
-            if (dur < 1) dur = 1;
-            const pct = (dur / runningTotal) * 100;
+            if (idx <= currentPhaseIndex) {
+                let dur = p.duration > 0 ? p.duration : (idx === currentPhaseIndex && isTimerRunning ? (totalSecondsElapsed - brewPhases.slice(0, idx).reduce((a,b)=>a+b.duration,0)) : 3);
+                if (dur < 1) dur = 1;
+                const pct = (dur / runningTotal) * 100;
 
-            let opacity = '0.35';
-            let segmentColor = p.color;
+                let opacity = (idx < currentPhaseIndex) ? '1' : '0.9';
+                let segmentColor = (idx === currentPhaseIndex && isTimerRunning) ? '#6f4520' : p.color;
 
-            if (idx < currentPhaseIndex) {
-                opacity = '1';
-            } else if (idx === currentPhaseIndex && isTimerRunning) {
-                opacity = '0.9';
-                segmentColor = '#6f4520';
+                container.innerHTML += `<div class="bar-segment" style="width: ${pct}%; background: ${segmentColor}; opacity: ${opacity};" title="${p.name}: ${dur}s"></div>`;
             }
-
-            container.innerHTML += `<div class="bar-segment" style="width: ${pct}%; background: ${segmentColor}; opacity: ${opacity};" title="${p.name}: ${dur}s"></div>`;
         });
+
+        // Add remaining muted placeholder bar to represent future unclicked stages
+        if (currentPhaseIndex < brewPhases.length - 1) {
+            container.innerHTML += `<div class="bar-segment" style="flex-grow: 1; background: var(--border-color); opacity: 0.4;" title="Remaining Stages"></div>`;
+        }
+
         document.getElementById('total-logged-time').textContent = totalSecondsElapsed + 's elapsed';
     }
 
@@ -745,13 +761,10 @@
         db.sessions.unshift(activeBrew);
         persistData();
         
-        document.getElementById('timer-action-btn').style.display = 'block';
-        document.getElementById('timer-action-btn').onclick = handleDynamicPhaseClick;
-        document.getElementById('timer-finish-btn').onclick = finishDynamicBrew;
+        document.getElementById('timer-action-btn').onclick = handlePresetPhaseClick;
         goToStep(1);
     }
 
-    // Bean Manager CRUD (with Right-Aligned Roast | Flavor Type Badge)
     function renderBeanManager() {
         const container = document.getElementById('bean-manager-list');
         container.innerHTML = db.beans.length === 0 ? '<p style="font-size: 0.85rem; color: var(--text-muted);">No beans added.</p>' : '';
@@ -843,7 +856,6 @@
         container.innerHTML = `<p style="font-size: 0.85rem;">History contains ${db.sessions.length} logged session(s).</p>`;
     }
 
-    // Preferred Coffee Profile Dashboard (Requires 3 or more logged profiles)
     function renderPreferredProfile() {
         const container = document.getElementById('taster-profile-content');
         const activeBeans = db.beans.filter(b => !b.archived);
