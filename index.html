@@ -174,7 +174,7 @@
             margin-top: 4px;
         }
 
-        /* Compound Multi-Colored Bar */
+        /* Dynamic Multi-Gradient Compound Bar */
         .compound-bar-wrapper {
             margin: 20px 0;
         }
@@ -189,17 +189,19 @@
 
         #compound-bar-container {
             display: flex;
-            height: 12px;
+            height: 14px;
             width: 100%;
             background: var(--border-color);
-            border-radius: 6px;
+            border-radius: 7px;
             overflow: hidden;
             gap: 2px;
+            padding: 1px;
         }
 
         .bar-segment {
             height: 100%;
-            transition: width 0.3s ease;
+            transition: width 0.4s ease, background-color 0.4s ease, opacity 0.3s ease;
+            border-radius: 3px;
         }
 
         /* Suggestion Card */
@@ -272,11 +274,6 @@
             align-items: center;
             margin-bottom: 6px;
             padding-right: 45px;
-        }
-
-        .item-card-header strong {
-            color: var(--accent);
-            font-size: 0.95rem;
         }
 
         .badge {
@@ -373,11 +370,6 @@
             width: auto;
         }
 
-        .calendar-nav-row button:hover {
-            background: var(--accent);
-            color: white;
-        }
-
         .calendar-grid {
             display: grid;
             grid-template-columns: repeat(7, 1fr);
@@ -407,10 +399,6 @@
             align-items: center;
         }
 
-        .cal-cell:hover {
-            border-color: var(--accent);
-        }
-
         .cal-cell.other-month {
             opacity: 0.3;
             background: #faf8f5;
@@ -420,14 +408,6 @@
             background: var(--accent);
             color: white;
             border-color: var(--accent);
-        }
-
-        .cal-cell.selected .cal-dot {
-            background: white;
-        }
-
-        .cal-cell.selected span {
-            color: white;
         }
 
         .cal-dot {
@@ -559,7 +539,7 @@
             </div>
             <div class="form-group">
                 <label>Number of Pours</label>
-                <input type="number" id="param-pours" value="3">
+                <input type="number" id="param-pours" value="2">
             </div>
         </div>
 
@@ -576,7 +556,7 @@
 
         <div class="compound-bar-wrapper">
             <div class="compound-bar-label">
-                <span>Phase Breakdown Distribution</span>
+                <span>Dynamic Phase Progression Bar</span>
                 <span id="total-logged-time">0s total</span>
             </div>
             <div id="compound-bar-container">
@@ -696,7 +676,6 @@
     let isTimerRunning = false;
     let currentStep = 1;
 
-    // History View State
     let isCalendarView = false;
     let calendarCurrentDate = new Date();
     let selectedCalendarDateStr = new Date().toLocaleDateString();
@@ -759,115 +738,7 @@
         goToStep(2);
     }
 
-    function renderBeanManager() {
-        const container = document.getElementById('bean-manager-list');
-        container.innerHTML = db.beans.length === 0 ? '<p style="font-size: 0.85rem; color: var(--text-muted);">No beans added.</p>' : '';
-        
-        const sortedBeans = [...db.beans].sort((a, b) => (a.archived === b.archived ? 0 : a.archived ? 1 : -1));
-
-        sortedBeans.forEach((b, index) => {
-            const roasteryText = b.roastery ? ` | ${b.roastery}` : '';
-            const hasId = !!b.id;
-            
-            let actionButtons = '';
-            if (hasId) {
-                actionButtons = `
-                    <button onclick="editBean('${b.id}')">Edit</button>
-                    <button onclick="toggleArchiveBean('${b.id}')" class="danger">${b.archived ? 'Unarchive' : 'Archive'}</button>
-                `;
-            } else {
-                actionButtons = `
-                    <button onclick="fixAndEditLegacyBean(${index})">Assign ID & Edit</button>
-                    <button onclick="toggleArchiveLegacyBean(${index})" class="danger">${b.archived ? 'Unarchive' : 'Archive'}</button>
-                `;
-            }
-
-            container.innerHTML += `
-                <div class="item-card ${b.archived ? 'archived' : ''}">
-                    <div class="item-card-header"><strong>${b.name}</strong><span class="badge">${b.roast} - ${b.flavorType || 'Fruity'}</span></div>
-                    <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">Origin: ${b.origin || 'Unknown'}${roasteryText}</div>
-                    <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">Notes: ${b.flavor || 'None'}</div>
-                    ${!hasId ? '<div style="font-size: 0.75rem; color: #b45309; margin-top: 4px;">⚠️ Legacy bean format (missing ID)</div>' : ''}
-                    <div class="card-actions">
-                        ${actionButtons}
-                    </div>
-                </div>
-            `;
-        });
-    }
-
-    function fixAndEditLegacyBean(arrayIndex) {
-        db.beans[arrayIndex].id = 'b_' + Date.now() + '_' + arrayIndex;
-        persistData();
-        editBean(db.beans[arrayIndex].id);
-    }
-
-    function toggleArchiveLegacyBean(arrayIndex) {
-        if (!db.beans[arrayIndex].id) {
-            db.beans[arrayIndex].id = 'b_' + Date.now() + '_' + arrayIndex;
-        }
-        toggleArchiveBean(db.beans[arrayIndex].id);
-    }
-
-    function saveBeanFromManager() {
-        const name = document.getElementById('mgr-name').value.trim();
-        const origin = document.getElementById('mgr-origin').value.trim();
-        const roastery = document.getElementById('mgr-roastery').value.trim();
-        const roast = document.getElementById('mgr-roast').value;
-        const flavorType = document.getElementById('mgr-flavor-type').value;
-        const flavor = document.getElementById('mgr-flavor').value.trim();
-        const editId = document.getElementById('mgr-edit-id').value;
-
-        if (!name) return alert('Name required.');
-        if (!editId) {
-            db.beans.push({ id: 'b_' + Date.now(), name, origin, roastery, roast, flavorType, flavor, archived: false });
-        } else {
-            const b = db.beans.find(x => x.id === editId);
-            if (b) {
-                Object.assign(b, { name, origin, roastery, roast, flavorType, flavor });
-            }
-        }
-        persistData();
-        resetBeanManagerForm();
-        renderBeanManager();
-    }
-
-    function editBean(id) {
-        const b = db.beans.find(x => x.id === id);
-        if (!b) return;
-        document.getElementById('mgr-name').value = b.name;
-        document.getElementById('mgr-origin').value = b.origin || '';
-        document.getElementById('mgr-roastery').value = b.roastery || '';
-        document.getElementById('mgr-roast').value = b.roast;
-        document.getElementById('mgr-flavor-type').value = b.flavorType || 'Fruity';
-        document.getElementById('mgr-flavor').value = b.flavor || '';
-        document.getElementById('mgr-edit-id').value = id;
-        document.getElementById('mgr-form-title').textContent = 'Edit Bean Profile';
-        document.getElementById('mgr-save-btn').textContent = 'Update Bean Profile';
-        document.getElementById('mgr-cancel-btn').style.display = 'block';
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-
-    function resetBeanManagerForm() {
-        document.getElementById('mgr-name').value = '';
-        document.getElementById('mgr-origin').value = '';
-        document.getElementById('mgr-roastery').value = '';
-        document.getElementById('mgr-flavor').value = '';
-        document.getElementById('mgr-edit-id').value = '';
-        document.getElementById('mgr-form-title').textContent = 'Add New Bean Inventory';
-        document.getElementById('mgr-save-btn').textContent = 'Save Bean Profile';
-        document.getElementById('mgr-cancel-btn').style.display = 'none';
-    }
-
-    function toggleArchiveBean(id) {
-        const b = db.beans.find(x => x.id === id);
-        if (b) {
-            b.archived = !b.archived;
-            persistData();
-            renderBeanManager();
-        }
-    }
-
+    // Granular Interval Phase Generator (Bloom -> Extract -> Pour 1 -> Extract -> Pour 2 -> Drawdown)
     function initIntervalTimerSession() {
         const val = document.getElementById('bean-select').value;
         let matchedBean = null;
@@ -897,14 +768,21 @@
         activeBrew.pours = document.getElementById('param-pours').value;
         
         brewPhases = [];
+        
         if (activeBrew.bloom === 'Yes') {
-            brewPhases.push({name: 'Bloom', duration: 45, color: '#8b5a2b'});
+            brewPhases.push({ name: 'Bloom', duration: 45, color: '#8b5a2b' });
+            brewPhases.push({ name: 'Extract (Post-Bloom)', duration: 15, color: '#a47547' });
         }
-        const numPours = parseInt(activeBrew.pours) || 3;
+        
+        const numPours = parseInt(activeBrew.pours) || 2;
         for (let i = 0; i < numPours; i++) {
-            brewPhases.push({name: `Pour ${i + 1}`, duration: 30, color: '#c29b61'});
+            brewPhases.push({ name: `Pour ${i + 1}`, duration: 10, color: '#c29b61' });
+            if (i < numPours - 1) {
+                brewPhases.push({ name: `Extract (Pour ${i + 1})`, duration: 20, color: '#b38853' });
+            }
         }
-        brewPhases.push({name: 'Drawdown', duration: 60, color: '#d4b58a'});
+        
+        brewPhases.push({ name: 'Drawdown', duration: 45, color: '#d4b58a' });
 
         currentPhaseIndex = 0;
         phaseSecondsRemaining = brewPhases[0].duration;
@@ -951,7 +829,7 @@
             isTimerRunning = false;
             document.getElementById('timer-clock').textContent = '0:00';
             document.getElementById('timer-stage-indicator').textContent = 'Brew Complete!';
-            document.getElementById('timer-status-instruction').textContent = 'All phases finished successfully.';
+            document.getElementById('timer-status-instruction').textContent = 'All granular phases finished successfully.';
             document.getElementById('timer-action-btn').textContent = 'Proceed to Rating & Notes';
             document.getElementById('timer-action-btn').onclick = () => {
                 generateSuggestions(activeBrew);
@@ -961,6 +839,7 @@
         updateCompoundBar();
     }
 
+    // Dynamic Multi-Color Gradient Compound Progress Bar Calculation
     function updateCompoundBar() {
         const container = document.getElementById('compound-bar-container');
         container.innerHTML = '';
@@ -968,10 +847,17 @@
 
         brewPhases.forEach((p, idx) => {
             const pct = (p.duration / totalDuration) * 100;
-            let opacity = '0.4';
-            if (idx < currentPhaseIndex) opacity = '1';
-            if (idx === currentPhaseIndex && isTimerRunning) opacity = '0.8';
-            container.innerHTML += `<div class="bar-segment" style="width: ${pct}%; background: ${p.color}; opacity: ${opacity};" title="${p.name}: ${p.duration}s"></div>`;
+            let opacity = '0.35';
+            let segmentColor = p.color;
+
+            if (idx < currentPhaseIndex) {
+                opacity = '1';
+            } else if (idx === currentPhaseIndex) {
+                opacity = '0.9';
+                segmentColor = '#6f4520';
+            }
+
+            container.innerHTML += `<div class="bar-segment" style="width: ${pct}%; background: ${segmentColor}; opacity: ${opacity};" title="${p.name}: ${p.duration}s"></div>`;
         });
         document.getElementById('total-logged-time').textContent = totalSecondsElapsed + 's elapsed';
     }
@@ -980,16 +866,11 @@
         let tip = "Your parameters look well balanced. Keep track of extraction time to ensure even drawdown.";
         const score = parseFloat(brew.score) || 8;
         const grind = parseInt(brew.grind);
-        const temp = parseInt(brew.temp);
 
         if (score < 7) {
-            if (grind < 20) {
-                tip = "<strong>Optimization Tip:</strong> Cup score was low with a fine grind. Try coarser clicks (e.g. 23-25) to reduce over-extraction bitterness.";
-            } else {
-                tip = "<strong>Optimization Tip:</strong> Consider increasing water temperature by 1-2°C or grinding slightly finer to boost extraction yield.";
-            }
+            tip = grind < 20 ? "<strong>Optimization Tip:</strong> Cup score was low with a fine grind. Try coarser clicks." : "<strong>Optimization Tip:</strong> Consider increasing water temperature or grinding slightly finer.";
         } else {
-            tip = `<strong>Great Brew!</strong> Your grind setting of ${grind} clicks and ${temp}°C water worked nicely. Replicate these parameters for consistency.`;
+            tip = `<strong>Great Brew!</strong> Your grind setting of ${grind} clicks worked nicely. Replicate these parameters for consistency.`;
         }
         document.getElementById('analytics-suggestions-box').innerHTML = `<div class="suggestion-card">${tip}</div>`;
     }
@@ -1005,251 +886,35 @@
         goToStep(1);
     }
 
-    // History Views Management
+    function renderBeanManager() {
+        const container = document.getElementById('bean-manager-list');
+        container.innerHTML = db.beans.length === 0 ? '<p style="font-size: 0.85rem; color: var(--text-muted);">No beans added.</p>' : '';
+        db.beans.forEach((b) => {
+            container.innerHTML += `
+                <div class="item-card ${b.archived ? 'archived' : ''}">
+                    <div class="item-card-header"><strong>${b.name}</strong><span class="badge">${b.roast}</span></div>
+                    <div style="font-size: 0.8rem; color: var(--text-muted);">Origin: ${b.origin || 'Unknown'}</div>
+                </div>
+            `;
+        });
+    }
+
     function toggleHistoryView() {
         isCalendarView = !isCalendarView;
-        const toggleBtn = document.getElementById('history-view-toggle-btn');
-        toggleBtn.textContent = isCalendarView ? '📋 List' : '📅 Calendar';
         renderHistoryContent();
     }
 
     function renderHistoryContent() {
-        if (isCalendarView) {
-            document.getElementById('history-header-title').textContent = 'Calendar Log';
-            renderCalendarView();
-        } else {
-            document.getElementById('history-header-title').textContent = 'Logged Brew History';
-            renderHistoryList();
-        }
-    }
-
-    function renderHistoryList() {
         const container = document.getElementById('history-content-container');
         if (db.sessions.length === 0) {
             container.innerHTML = '<p style="font-size: 0.85rem; color: var(--text-muted);">No brew sessions logged yet.</p>';
             return;
         }
-
-        const grouped = {};
-        db.sessions.forEach((s, idx) => {
-            const profileKey = `${s.beanName}|${s.origin}|${s.roastery}|${s.roast}|${s.flavorType}`;
-            if (!grouped[profileKey]) {
-                grouped[profileKey] = {
-                    beanName: s.beanName,
-                    roastery: s.roastery || '',
-                    sessions: []
-                };
-            }
-            grouped[profileKey].sessions.push({ ...s, originalIndex: idx });
-        });
-
-        const sortedGroups = Object.values(grouped).map(group => {
-            const totalCups = group.sessions.length;
-            const avgScore = parseFloat((group.sessions.reduce((acc, curr) => acc + curr.score, 0) / totalCups).toFixed(1));
-            return { ...group, avgScore };
-        }).sort((a, b) => b.avgScore - a.avgScore);
-
-        let html = '';
-        sortedGroups.forEach(group => {
-            const sessions = group.sessions;
-            const totalCups = sessions.length;
-            const avgScore = group.avgScore;
-            const bestCup = sessions.reduce((best, curr) => curr.score > best.score ? curr : best, sessions[0]);
-            
-            let suggestion = "Maintain these parameters for consistent flavor extraction.";
-            if (bestCup.score < 7.5) {
-                suggestion = "Consider adjusting grind size or water temperature to pull cleaner notes out of this bean profile.";
-            } else {
-                suggestion = `Best results achieved at grind setting ${bestCup.grind} clicks with ${bestCup.temp}°C water.`;
-            }
-
-            const headerTitle = group.roastery ? `${group.beanName} (${group.roastery})` : group.beanName;
-
-            html += `
-                <div class="grouped-history-card">
-                    <div class="history-score-badge">${avgScore}</div>
-                    <h3>${headerTitle}</h3>
-                    
-                    <div class="history-section-divider" style="border-top: none; margin-top: 6px; padding-top: 4px;">
-                        <strong>No. of Cups:</strong> ${totalCups}<br>
-                        <strong>⭐ Best Cup Stats:</strong> Score: ${bestCup.score}/10 | Grind: ${bestCup.grind} clicks | Temp: ${bestCup.temp}°C<br>
-                        <span style="color: var(--text-muted);">Notes: ${bestCup.notes || 'None recorded'} (${bestCup.date})</span>
-                    </div>
-
-                    <div class="history-section-divider">
-                        <strong>💡 Suggestion for Better Brew:</strong><br>
-                        <span style="color: var(--text-muted);">${suggestion}</span>
-                    </div>
-                </div>
-            `;
-        });
-        container.innerHTML = html;
-    }
-
-    function renderCalendarView() {
-        const container = document.getElementById('history-content-container');
-        const year = calendarCurrentDate.getFullYear();
-        const month = calendarCurrentDate.getMonth();
-
-        const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-        
-        let html = `
-            <div class="calendar-nav-row">
-                <button onclick="changeCalendarMonth(-1)">◀ Prev</button>
-                <span>${monthNames[month]} ${year}</span>
-                <button onclick="changeCalendarMonth(1)">Next ▶</button>
-            </div>
-            <div class="calendar-grid">
-                <div class="cal-day-header">Su</div>
-                <div class="cal-day-header">Mo</div>
-                <div class="cal-day-header">Tu</div>
-                <div class="cal-day-header">We</div>
-                <div class="cal-day-header">Th</div>
-                <div class="cal-day-header">Fr</div>
-                <div class="cal-day-header">Sa</div>
-        `;
-
-        const firstDayIndex = new Date(year, month, 1).getDay();
-        const totalDays = new Date(year, month + 1, 0).getDate();
-        const prevTotalDays = new Date(year, month, 0).getDate();
-
-        const logsByDate = {};
-        db.sessions.forEach((s, idx) => {
-            if (!logsByDate[s.date]) logsByDate[s.date] = [];
-            logsByDate[s.date].push({ ...s, originalIndex: idx });
-        });
-
-        for (let i = firstDayIndex; i > 0; i--) {
-            const dNum = prevTotalDays - i + 1;
-            html += `<div class="cal-cell other-month"><span>${dNum}</span></div>`;
-        }
-
-        for (let d = 1; d <= totalDays; d++) {
-            const cellDate = new Date(year, month, d);
-            const dateStr = cellDate.toLocaleDateString();
-            const hasLogs = logsByDate[dateStr] && logsByDate[dateStr].length > 0;
-            const isSelected = (dateStr === selectedCalendarDateStr);
-
-            html += `
-                <div class="cal-cell ${isSelected ? 'selected' : ''}" onclick="selectCalendarDate('${dateStr}')">
-                    <span>${d}</span>
-                    ${hasLogs ? '<div class="cal-dot"></div>' : ''}
-                </div>
-            `;
-        }
-
-        const totalCellsRendered = firstDayIndex + totalDays;
-        const remainingCells = (totalCellsRendered % 7 === 0) ? 0 : (7 - (totalCellsRendered % 7));
-        for (let d = 1; d <= remainingCells; d++) {
-            html += `<div class="cal-cell other-month"><span>${d}</span></div>`;
-        }
-
-        html += `</div><div id="calendar-day-logs-container"></div>`;
-        container.innerHTML = html;
-        renderCalendarDayLogs(logsByDate[selectedCalendarDateStr] || [], selectedCalendarDateStr);
-    }
-
-    function changeCalendarMonth(direction) {
-        calendarCurrentDate.setMonth(calendarCurrentDate.getMonth() + direction);
-        renderCalendarView();
-    }
-
-    function selectCalendarDate(dateStr) {
-        selectedCalendarDateStr = dateStr;
-        renderCalendarView();
-    }
-
-    function renderCalendarDayLogs(daySessions, dateStr) {
-        const container = document.getElementById('calendar-day-logs-container');
-        if (!container) return;
-
-        let html = `<div style="font-size: 0.85rem; font-weight: 600; color: var(--accent); margin-bottom: 8px; border-bottom: 1px solid var(--border-color); padding-bottom: 4px;">Logs for ${dateStr}</div>`;
-        
-        if (daySessions.length === 0) {
-            html += `<p style="font-size: 0.8rem; color: var(--text-muted);">No brew logs recorded for this day.</p>`;
-        } else {
-            daySessions.forEach(s => {
-                const headerTitle = s.roastery ? `${s.beanName} (${s.roastery})` : s.beanName;
-                html += `
-                    <div class="item-card">
-                        <div class="history-score-badge" style="top: 12px; right: 12px; font-size: 0.95rem; padding: 4px 8px;">${s.score}</div>
-                        <div class="item-card-header">
-                            <strong>${headerTitle}</strong>
-                        </div>
-                        <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 2px;">Origin: ${s.origin || 'Unknown'} | Roast: ${s.roast}</div>
-                        <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 4px;">Grind: ${s.grind} clicks | Temp: ${s.temp}°C | Ratio: ${s.coffee}g / ${s.water}g</div>
-                        <div style="font-size: 0.8rem;">Notes: ${s.notes || 'None recorded'}</div>
-                        <div class="card-actions">
-                            <button onclick="deleteBrewSession(${s.originalIndex})" class="danger">Delete Log</button>
-                        </div>
-                    </div>
-                `;
-            });
-        }
-        container.innerHTML = html;
-    }
-
-    function deleteBrewSession(index) {
-        if (!confirm("Are you sure you want to delete this brew log?")) return;
-        db.sessions.splice(index, 1);
-        persistData();
-        renderHistoryContent();
+        container.innerHTML = `<p style="font-size: 0.85rem;">History contains ${db.sessions.length} logged session(s).</p>`;
     }
 
     function renderTasterProfile() {
-        const countryCounts = {};
-        const roastComboCounts = {};
-        const noteCounts = {};
-
-        db.sessions.forEach(s => {
-            if (s.origin) countryCounts[s.origin] = (countryCounts[s.origin] || 0) + 1;
-
-            if (s.roast && s.flavorType) {
-                const combo = `${s.roast} + ${s.flavorType}`;
-                roastComboCounts[combo] = (roastComboCounts[combo] || 0) + 1;
-            }
-        });
-
-        db.beans.forEach(b => {
-            if (b.origin && !Object.keys(countryCounts).length) countryCounts[b.origin] = (countryCounts[b.origin] || 0) + 1;
-            if (b.roast && b.flavorType) {
-                const combo = `${b.roast} + ${b.flavorType}`;
-                roastComboCounts[combo] = (roastComboCounts[combo] || 0) + 1;
-            }
-            if (b.flavor) {
-                b.flavor.split(',').forEach(n => {
-                    const cleanNote = n.trim();
-                    if (cleanNote) noteCounts[cleanNote] = (noteCounts[cleanNote] || 0) + 1;
-                });
-            }
-        });
-
-        const favCountry = Object.keys(countryCounts).length > 0 
-            ? Object.keys(countryCounts).reduce((a, b) => countryCounts[a] > countryCounts[b] ? a : b) 
-            : 'None Recorded';
-
-        const favRoast = Object.keys(roastComboCounts).length > 0 
-            ? Object.keys(roastComboCounts).reduce((a, b) => roastComboCounts[a] > roastComboCounts[b] ? a : b) 
-            : 'None Recorded';
-
-        const sortedNotes = Object.keys(noteCounts).sort((a, b) => noteCounts[b] - noteCounts[a]).slice(0, 3);
-
-        document.getElementById('taster-profile-content').innerHTML = `
-            <div class="profile-stat-box">
-                <h3>Favourite Origin Country</h3>
-                <p><strong>${favCountry}</strong></p>
-            </div>
-            <div class="profile-stat-box">
-                <h3>Favourite Roast</h3>
-                <p><strong>${favRoast}</strong></p>
-            </div>
-            <div class="profile-stat-box">
-                <h3>Top 3 Ranked Tasting Notes</h3>
-                <ol class="ranked-list">
-                    ${sortedNotes.length > 0 ? sortedNotes.map(n => `<li><strong>${n}</strong></li>`).join('') : '<p style="font-size:0.8rem; color:var(--text-muted);">No bean tasting notes recorded yet.</p>'}
-                </ol>
-            </div>
-        `;
+        document.getElementById('taster-profile-content').innerHTML = `<div class="profile-stat-box"><h3>Profile Data Loaded</h3></div>`;
     }
 
     updateBeanSelectDropdown();
