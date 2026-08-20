@@ -146,12 +146,26 @@
 
         /* Timer UI */
         .timer-display-box {
+            position: relative;
             text-align: center;
             padding: 24px 0;
             background: #faf8f5;
             border-radius: 10px;
             margin-bottom: 16px;
             border: 1px solid var(--border-color);
+        }
+
+        .total-time-badge {
+            position: absolute;
+            top: 10px;
+            right: 12px;
+            background: #fff;
+            border: 1px solid var(--border-color);
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            font-weight: 500;
         }
 
         #timer-clock {
@@ -412,6 +426,7 @@
     <!-- STEP 2: PRE-SET PHASE TIMER -->
     <div id="step-2" class="step-panel">
         <div class="timer-display-box">
+            <div class="total-time-badge">Total: <span id="total-time-display">0:00</span></div>
             <div id="timer-clock">0:00</div>
             <div id="timer-stage-indicator">Stage: Ready</div>
             <div id="timer-status-instruction">Tap below to start phase</div>
@@ -532,6 +547,7 @@
     let activeBrew = {};
     let brewPhases = [];
     let currentPhaseIndex = 0;
+    let roundSecondsElapsed = 0;
     let totalSecondsElapsed = 0;
     let timerInterval = null;
     let isTimerRunning = false;
@@ -596,7 +612,6 @@
         const bloom = document.getElementById('param-bloom').value;
         const pours = parseInt(document.getElementById('param-pours').value) || 0;
 
-        // Anti-troll rule check
         if (bloom === 'No' && pours === 0) {
             alert("Sorry, no trolls allowed");
             document.getElementById('param-pours').value = 2;
@@ -637,7 +652,6 @@
         
         brewPhases = [];
         
-        // Build sequence phases
         if (activeBrew.bloom === 'Yes') {
             brewPhases.push({ name: 'Bloom', duration: 0, color: '#8b5a2b' });
         }
@@ -649,14 +663,15 @@
             brewPhases.push({ name: `Pour ${i}`, duration: 0, color: '#c29b61' });
         }
 
-        // Final phase is always Drawdown
         brewPhases.push({ name: 'Drawdown', duration: 0, color: '#d4b58a' });
 
         currentPhaseIndex = 0;
+        roundSecondsElapsed = 0;
         totalSecondsElapsed = 0;
         isTimerRunning = false;
         
         document.getElementById('timer-clock').textContent = '0:00';
+        document.getElementById('total-time-display').textContent = '0:00';
         document.getElementById('timer-stage-indicator').textContent = 'Stage: ' + brewPhases[0].name;
         document.getElementById('timer-status-instruction').textContent = 'Tap to start timer & begin phase';
         document.getElementById('timer-action-btn').textContent = 'Start Timer';
@@ -667,32 +682,38 @@
     function handlePresetPhaseClick() {
         if (!isTimerRunning) {
             isTimerRunning = true;
+            roundSecondsElapsed = 0;
             totalSecondsElapsed = 0;
             
             timerInterval = setInterval(() => {
+                roundSecondsElapsed++;
                 totalSecondsElapsed++;
-                const mins = Math.floor(totalSecondsElapsed / 60);
-                const secs = totalSecondsElapsed % 60;
-                document.getElementById('timer-clock').textContent = `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+
+                const rMins = Math.floor(roundSecondsElapsed / 60);
+                const rSecs = roundSecondsElapsed % 60;
+                document.getElementById('timer-clock').textContent = `${rMins}:${rSecs < 10 ? '0' : ''}${rSecs}`;
+
+                const tMins = Math.floor(totalSecondsElapsed / 60);
+                const tSecs = totalSecondsElapsed % 60;
+                document.getElementById('total-time-display').textContent = `${tMins}:${tSecs < 10 ? '0' : ''}${tSecs}`;
                 
-                let activeDur = totalSecondsElapsed - brewPhases.slice(0, currentPhaseIndex).reduce((a, b) => a + b.duration, 0);
-                brewPhases[currentPhaseIndex].duration = activeDur > 0 ? activeDur : 1;
+                brewPhases[currentPhaseIndex].duration = roundSecondsElapsed;
                 updatePresetCompoundBar();
             }, 1000);
 
             document.getElementById('timer-status-instruction').textContent = 'Tap to advance to next stage';
             document.getElementById('timer-action-btn').textContent = 'Next Stage (' + brewPhases[1].name + ')';
         } else {
-            // Snapshot duration of current phase
-            let activeDur = totalSecondsElapsed - brewPhases.slice(0, currentPhaseIndex).reduce((a, b) => a + b.duration, 0);
-            brewPhases[currentPhaseIndex].duration = activeDur > 0 ? activeDur : 1;
+            brewPhases[currentPhaseIndex].duration = roundSecondsElapsed > 0 ? roundSecondsElapsed : 1;
+            roundSecondsElapsed = 0;
+            document.getElementById('timer-clock').textContent = '0:00';
 
             currentPhaseIndex++;
 
-            // Check if we finished all phases
             if (currentPhaseIndex >= brewPhases.length) {
                 clearInterval(timerInterval);
                 isTimerRunning = false;
+                document.getElementById('timer-clock').textContent = 'Done';
                 document.getElementById('timer-stage-indicator').textContent = 'Brew Complete!';
                 document.getElementById('timer-status-instruction').textContent = 'All sequence phases captured.';
                 document.getElementById('timer-action-btn').textContent = 'Proceed to Rating & Notes';
@@ -717,14 +738,14 @@
         const container = document.getElementById('compound-bar-container');
         container.innerHTML = '';
         
-        let runningTotal = brewPhases.reduce((acc, curr) => acc + (curr.duration > 0 ? curr.duration : 1), 0);
-        if (runningTotal < 1) runningTotal = 1;
+        // Base scale on a standard estimated total brew time (e.g. 180 seconds or accumulated total + headroom)
+        const estimatedTotalDuration = Math.max(180, totalSecondsElapsed + (brewPhases.length - currentPhaseIndex) * 30);
 
         brewPhases.forEach((p, idx) => {
             if (idx <= currentPhaseIndex) {
-                let dur = p.duration > 0 ? p.duration : (idx === currentPhaseIndex && isTimerRunning ? (totalSecondsElapsed - brewPhases.slice(0, idx).reduce((a,b)=>a+b.duration,0)) : 3);
+                let dur = p.duration > 0 ? p.duration : (idx === currentPhaseIndex && isTimerRunning ? (roundSecondsElapsed > 0 ? roundSecondsElapsed : 5) : 5);
                 if (dur < 1) dur = 1;
-                const pct = (dur / runningTotal) * 100;
+                const pct = (dur / estimatedTotalDuration) * 100;
 
                 let opacity = (idx < currentPhaseIndex) ? '1' : '0.9';
                 let segmentColor = (idx === currentPhaseIndex && isTimerRunning) ? '#6f4520' : p.color;
@@ -733,7 +754,7 @@
             }
         });
 
-        // Add remaining muted placeholder bar to represent future unclicked stages
+        // Remaining unallocated placeholder bar with flexible flex-grow to preserve headspace
         if (currentPhaseIndex < brewPhases.length - 1) {
             container.innerHTML += `<div class="bar-segment" style="flex-grow: 1; background: var(--border-color); opacity: 0.4;" title="Remaining Stages"></div>`;
         }
