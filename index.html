@@ -566,7 +566,7 @@
         <button onclick="startTimerSetup()" id="proceed-brew-btn" disabled>Proceed to Stopwatch</button>
     </div>
 
-    <!-- STEP 2: MANUAL CHECKPOINT STOPWATCH -->
+    <!-- STEP 2: INTERVAL TIMER -->
     <div id="step-2" class="step-panel">
         <div class="timer-display-box">
             <div id="timer-clock">0:00</div>
@@ -584,7 +584,7 @@
             </div>
         </div>
 
-        <button id="timer-action-btn" onclick="handlePourOrFinishPress()">Start Bloom</button>
+        <button id="timer-action-btn" onclick="handleIntervalAction()">Start Interval Timer</button>
         <button onclick="attemptNav(1)" style="background: transparent; color: var(--text-muted); border: 1px solid var(--border-color); margin-top: 8px;">Cancel / Edit Params</button>
     </div>
 
@@ -690,10 +690,10 @@
     let activeBrew = {};
     let brewPhases = [];
     let currentPhaseIndex = 0;
-    let currentPhaseSeconds = 0;
-    let stopwatchSeconds = 0;
-    let stopwatchInterval = null;
-    let isStopwatchRunning = false;
+    let phaseSecondsRemaining = 0;
+    let totalSecondsElapsed = 0;
+    let timerInterval = null;
+    let isTimerRunning = false;
     let currentStep = 1;
 
     // History View State
@@ -702,7 +702,7 @@
     let selectedCalendarDateStr = new Date().toLocaleDateString();
 
     window.addEventListener('beforeunload', (e) => {
-        if (isStopwatchRunning || currentStep === 2) {
+        if (isTimerRunning || currentStep === 2) {
             e.preventDefault();
             e.returnValue = '';
         }
@@ -711,8 +711,8 @@
     function attemptNav(stepNum) {
         if (currentStep === 2 && stepNum !== 2) {
             if (!confirm("Are you sure you want to leave? Active timer will be lost.")) return;
-            if (stopwatchInterval) clearInterval(stopwatchInterval);
-            isStopwatchRunning = false;
+            if (timerInterval) clearInterval(timerInterval);
+            isTimerRunning = false;
         }
         goToStep(stepNum);
     }
@@ -729,7 +729,7 @@
         if (stepNum === 4) document.getElementById('nav-history').classList.add('active');
 
         if (stepNum === 1) updateBeanSelectDropdown();
-        if (stepNum === 2) initStopwatchSession();
+        if (stepNum === 2) initIntervalTimerSession();
         if (stepNum === 4) renderHistoryContent();
         if (stepNum === 5) renderBeanManager();
         if (stepNum === 6) renderTasterProfile();
@@ -868,7 +868,7 @@
         }
     }
 
-    function initStopwatchSession() {
+    function initIntervalTimerSession() {
         const val = document.getElementById('bean-select').value;
         let matchedBean = null;
         if (val === 'new') {
@@ -896,33 +896,84 @@
         activeBrew.bloom = document.getElementById('param-bloom').value;
         activeBrew.pours = document.getElementById('param-pours').value;
         
-        brewPhases = [{name: 'Bloom', duration: 0, color: '#8b5a2b'}];
-        for(let i=0; i<parseInt(activeBrew.pours); i++) brewPhases.push({name: 'Pour '+ (i+1), duration: 0, color: '#c29b61'});
-        brewPhases.push({name: 'Drawdown', duration: 0, color: '#d4b58a'});
+        brewPhases = [];
+        if (activeBrew.bloom === 'Yes') {
+            brewPhases.push({name: 'Bloom', duration: 45, color: '#8b5a2b'});
+        }
+        const numPours = parseInt(activeBrew.pours) || 3;
+        for (let i = 0; i < numPours; i++) {
+            brewPhases.push({name: `Pour ${i + 1}`, duration: 30, color: '#c29b61'});
+        }
+        brewPhases.push({name: 'Drawdown', duration: 60, color: '#d4b58a'});
 
-        currentPhaseIndex = 0; currentPhaseSeconds = 0; stopwatchSeconds = 0; isStopwatchRunning = false;
+        currentPhaseIndex = 0;
+        phaseSecondsRemaining = brewPhases[0].duration;
+        totalSecondsElapsed = 0;
+        isTimerRunning = false;
+        
+        document.getElementById('timer-clock').textContent = phaseSecondsRemaining + 's';
+        document.getElementById('timer-stage-indicator').textContent = 'Stage: ' + brewPhases[0].name;
+        document.getElementById('timer-status-instruction').textContent = 'Tap to start interval timer';
+        document.getElementById('timer-action-btn').textContent = 'Start Interval Timer';
+        document.getElementById('total-logged-time').textContent = '0s total';
+        updateCompoundBar();
     }
 
-    function handlePourOrFinishPress() {
-        if (!isStopwatchRunning) {
-            isStopwatchRunning = true;
-            stopwatchInterval = setInterval(() => {
-                stopwatchSeconds++;
-                currentPhaseSeconds++;
-                document.getElementById('timer-clock').textContent = Math.floor(stopwatchSeconds/60) + ':' + (stopwatchSeconds%60).toString().padStart(2,'0');
+    function handleIntervalAction() {
+        if (!isTimerRunning) {
+            isTimerRunning = true;
+            document.getElementById('timer-status-instruction').textContent = 'Timer active...';
+            document.getElementById('timer-action-btn').textContent = 'Skip / Next Stage';
+            
+            timerInterval = setInterval(() => {
+                totalSecondsElapsed++;
+                phaseSecondsRemaining--;
+                document.getElementById('timer-clock').textContent = phaseSecondsRemaining + 's';
+                updateCompoundBar();
+
+                if (phaseSecondsRemaining <= 0) {
+                    advanceIntervalPhase();
+                }
             }, 1000);
-            document.getElementById('timer-action-btn').textContent = 'Next Stage';
-        } else if (currentPhaseIndex < brewPhases.length - 1) {
-            brewPhases[currentPhaseIndex].duration = currentPhaseSeconds;
-            currentPhaseSeconds = 0;
-            currentPhaseIndex++;
+        } else {
+            advanceIntervalPhase();
+        }
+    }
+
+    function advanceIntervalPhase() {
+        currentPhaseIndex++;
+        if (currentPhaseIndex < brewPhases.length) {
+            phaseSecondsRemaining = brewPhases[currentPhaseIndex].duration;
+            document.getElementById('timer-clock').textContent = phaseSecondsRemaining + 's';
             document.getElementById('timer-stage-indicator').textContent = 'Stage: ' + brewPhases[currentPhaseIndex].name;
         } else {
-            clearInterval(stopwatchInterval);
-            isStopwatchRunning = false;
-            generateSuggestions(activeBrew);
-            goToStep(3);
+            clearInterval(timerInterval);
+            isTimerRunning = false;
+            document.getElementById('timer-clock').textContent = '0:00';
+            document.getElementById('timer-stage-indicator').textContent = 'Brew Complete!';
+            document.getElementById('timer-status-instruction').textContent = 'All phases finished successfully.';
+            document.getElementById('timer-action-btn').textContent = 'Proceed to Rating & Notes';
+            document.getElementById('timer-action-btn').onclick = () => {
+                generateSuggestions(activeBrew);
+                goToStep(3);
+            };
         }
+        updateCompoundBar();
+    }
+
+    function updateCompoundBar() {
+        const container = document.getElementById('compound-bar-container');
+        container.innerHTML = '';
+        const totalDuration = brewPhases.reduce((acc, curr) => acc + curr.duration, 0);
+
+        brewPhases.forEach((p, idx) => {
+            const pct = (p.duration / totalDuration) * 100;
+            let opacity = '0.4';
+            if (idx < currentPhaseIndex) opacity = '1';
+            if (idx === currentPhaseIndex && isTimerRunning) opacity = '0.8';
+            container.innerHTML += `<div class="bar-segment" style="width: ${pct}%; background: ${p.color}; opacity: ${opacity};" title="${p.name}: ${p.duration}s"></div>`;
+        });
+        document.getElementById('total-logged-time').textContent = totalSecondsElapsed + 's elapsed';
     }
 
     function generateSuggestions(brew) {
@@ -949,6 +1000,8 @@
         activeBrew.date = new Date().toLocaleDateString();
         db.sessions.unshift(activeBrew);
         persistData();
+        
+        document.getElementById('timer-action-btn').onclick = handleIntervalAction;
         goToStep(1);
     }
 
@@ -1060,20 +1113,17 @@
         const totalDays = new Date(year, month + 1, 0).getDate();
         const prevTotalDays = new Date(year, month, 0).getDate();
 
-        // Map logs by date string for easy dot check
         const logsByDate = {};
         db.sessions.forEach((s, idx) => {
             if (!logsByDate[s.date]) logsByDate[s.date] = [];
             logsByDate[s.date].push({ ...s, originalIndex: idx });
         });
 
-        // Previous month filler days
         for (let i = firstDayIndex; i > 0; i--) {
             const dNum = prevTotalDays - i + 1;
             html += `<div class="cal-cell other-month"><span>${dNum}</span></div>`;
         }
 
-        // Current month days
         for (let d = 1; d <= totalDays; d++) {
             const cellDate = new Date(year, month, d);
             const dateStr = cellDate.toLocaleDateString();
@@ -1088,7 +1138,6 @@
             `;
         }
 
-        // Next month filler days
         const totalCellsRendered = firstDayIndex + totalDays;
         const remainingCells = (totalCellsRendered % 7 === 0) ? 0 : (7 - (totalCellsRendered % 7));
         for (let d = 1; d <= remainingCells; d++) {
