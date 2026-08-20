@@ -229,13 +229,13 @@
             line-height: 1.4;
         }
 
-        /* Item Cards (Beans Manager) */
+        /* Item Cards (Beans Manager & History Grouping) */
         .item-card {
             position: relative;
             padding: 14px;
             border: 1px solid var(--border-color);
             border-radius: 8px;
-            margin-bottom: 10px;
+            margin-bottom: 12px;
             font-size: 0.85rem;
             background: #fff;
             transition: opacity 0.2s, background 0.2s;
@@ -446,9 +446,9 @@
         <button onclick="attemptNav(1)" style="background: transparent; color: var(--text-muted); border: 1px solid var(--border-color); margin-top: 8px;">Cancel / Edit Params</button>
     </div>
 
-    <!-- STEP 3: RATING & OPTIMIZATION TIPS -->
+    <!-- STEP 3: RATING & COMMENTS -->
     <div id="step-3" class="step-panel">
-        <h2 style="font-size: 1.05rem; margin-bottom: 12px; color: var(--accent);">Brew Complete Analysis & Tips</h2>
+        <h2 style="font-size: 1.05rem; margin-bottom: 12px; color: var(--accent);">Brew Complete Analysis & Comments</h2>
         
         <div id="analytics-suggestions-box"></div>
 
@@ -458,17 +458,17 @@
         </div>
 
         <div class="form-group">
-            <label>Specific Tasting Notes (comma separated)</label>
-            <textarea id="cup-notes" rows="3" placeholder="Peach, floral, clean finish..."></textarea>
+            <label>General Comments / Notes</label>
+            <textarea id="cup-notes" rows="3" placeholder="Tasting observations, brewer notes..."></textarea>
         </div>
 
         <button onclick="saveBrewSession()">Save & Return to Brew</button>
     </div>
 
-    <!-- STEP 4: HISTORY -->
+    <!-- STEP 4: HISTORY (GROUPED BY BEAN PROFILE) -->
     <div id="step-4" class="step-panel">
         <div class="history-top-bar">
-            <h2>Logged Brew History</h2>
+            <h2>Brew History & Calendar</h2>
         </div>
         <div id="history-content-container"></div>
         <button onclick="attemptNav(1)" style="margin-top: 16px;">Back to Brew</button>
@@ -716,7 +716,7 @@
                 document.getElementById('timer-clock').textContent = 'Done';
                 document.getElementById('timer-stage-indicator').textContent = 'Brew Complete!';
                 document.getElementById('timer-status-instruction').textContent = 'All sequence phases captured.';
-                document.getElementById('timer-action-btn').textContent = 'Proceed to Rating & Notes';
+                document.getElementById('timer-action-btn').textContent = 'Proceed to Rating & Comments';
                 document.getElementById('timer-action-btn').onclick = () => {
                     generateSuggestions(activeBrew);
                     goToStep(3);
@@ -738,7 +738,6 @@
         const container = document.getElementById('compound-bar-container');
         container.innerHTML = '';
         
-        // Base scale on a standard estimated total brew time (e.g. 180 seconds or accumulated total + headroom)
         const estimatedTotalDuration = Math.max(180, totalSecondsElapsed + (brewPhases.length - currentPhaseIndex) * 30);
 
         brewPhases.forEach((p, idx) => {
@@ -754,7 +753,6 @@
             }
         });
 
-        // Remaining unallocated placeholder bar with flexible flex-grow to preserve headspace
         if (currentPhaseIndex < brewPhases.length - 1) {
             container.innerHTML += `<div class="bar-segment" style="flex-grow: 1; background: var(--border-color); opacity: 0.4;" title="Remaining Stages"></div>`;
         }
@@ -874,7 +872,48 @@
             container.innerHTML = '<p style="font-size: 0.85rem; color: var(--text-muted);">No brew sessions logged yet.</p>';
             return;
         }
-        container.innerHTML = `<p style="font-size: 0.85rem;">History contains ${db.sessions.length} logged session(s).</p>`;
+
+        // Group sessions by bean name
+        const groups = {};
+        db.sessions.forEach(s => {
+            const name = s.beanName || 'Unknown Bean';
+            if (!groups[name]) groups[name] = [];
+            groups[name].push(s);
+        });
+
+        // Compute averages and best cup for sorting
+        const groupList = Object.keys(groups).map(beanName => {
+            const list = groups[beanName];
+            const avgScore = list.reduce((acc, curr) => acc + (curr.score || 0), 0) / list.length;
+            const bestSession = list.reduce((best, curr) => (curr.score > best.score ? curr : best), list[0]);
+            return { beanName, list, avgScore, bestSession };
+        });
+
+        // Sort beans by highest average score first
+        groupList.sort((a, b) => b.avgScore - a.avgScore);
+
+        let html = '';
+        groupList.forEach(g => {
+            html += `
+                <div class="item-card" style="background: #faf8f5;">
+                    <div class="item-card-header">
+                        <strong>${g.beanName}</strong>
+                        <span class="badge">Avg Score: ${g.avgScore.toFixed(1)} / 10 (${g.list.length} brew${g.list.length > 1 ? 's' : ''})</span>
+                    </div>
+                    <div style="font-size: 0.8rem; color: var(--accent); margin-bottom: 6px;">
+                        ⭐ <strong>Best Cup Specs:</strong> Score: ${g.bestSession.score} | Grind: ${g.bestSession.grind} clicks | Temp: ${g.bestSession.temp}°C | Ratio: ${g.bestSession.coffee}g / ${g.bestSession.water}g (${g.bestSession.date})
+                    </div>
+                    <div style="font-size: 0.78rem; color: var(--text-muted);">
+                        <strong>Recent logs:</strong>
+                        <ul style="margin-left: 16px; margin-top: 4px;">
+                            ${g.list.map(s => `<li>${s.date} — Score: ${s.score} | Grind: ${s.grind}c | Comment: "${s.notes || 'None'}"</li>`).join('')}
+                        </ul>
+                    </div>
+                </div>
+            `;
+        });
+
+        container.innerHTML = html;
     }
 
     function renderPreferredProfile() {
