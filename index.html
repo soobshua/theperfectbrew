@@ -229,7 +229,7 @@
             line-height: 1.4;
         }
 
-        /* Item Cards (Beans Manager & History Grouping) */
+        /* Item Cards */
         .item-card {
             position: relative;
             padding: 14px;
@@ -303,6 +303,66 @@
         .history-top-bar h2 {
             font-size: 1.05rem;
             color: var(--accent);
+        }
+
+        /* Calendar Styles */
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 4px;
+            text-align: center;
+            margin-bottom: 16px;
+        }
+
+        .calendar-day-header {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            padding: 6px 0;
+        }
+
+        .calendar-cell {
+            background: #faf8f5;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            min-height: 52px;
+            padding: 4px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            font-size: 0.8rem;
+            cursor: default;
+        }
+
+        .calendar-cell.other-month {
+            opacity: 0.35;
+        }
+
+        .calendar-cell.has-coffee {
+            background: #fff8f0;
+            border-color: var(--accent);
+            cursor: pointer;
+        }
+
+        .calendar-cell .day-num {
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+
+        .coffee-dot-container {
+            display: flex;
+            gap: 2px;
+            flex-wrap: wrap;
+            justify-content: center;
+            max-width: 100%;
+        }
+
+        .coffee-dot {
+            width: 6px;
+            height: 6px;
+            background: var(--accent);
+            border-radius: 50%;
         }
 
         .profile-stat-box {
@@ -465,12 +525,36 @@
         <button onclick="saveBrewSession()">Save & Return to Brew</button>
     </div>
 
-    <!-- STEP 4: HISTORY (GROUPED BY BEAN PROFILE) -->
+    <!-- STEP 4: HISTORY (GROUPED BY BEAN PROFILE) & CALENDAR -->
     <div id="step-4" class="step-panel">
         <div class="history-top-bar">
-            <h2>Brew History & Calendar</h2>
+            <h2>Brew History</h2>
+            <button onclick="toggleCalendarView()" id="calendar-toggle-btn" style="width: auto; margin-top: 0; padding: 6px 12px; font-size: 0.85rem;">📅 View Calendar</button>
         </div>
-        <div id="history-content-container"></div>
+        
+        <div id="history-view-container">
+            <div id="history-content-container"></div>
+        </div>
+
+        <div id="calendar-view-container" style="display: none;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                <button onclick="changeMonth(-1)" style="width: auto; margin-top:0; padding: 4px 10px; font-size: 0.8rem; background: transparent; color: var(--accent); border: 1px solid var(--accent);">&larr; Prev</button>
+                <strong id="calendar-month-year" style="font-size: 0.95rem; color: var(--accent);"></strong>
+                <button onclick="changeMonth(1)" style="width: auto; margin-top:0; padding: 4px 10px; font-size: 0.8rem; background: transparent; color: var(--accent); border: 1px solid var(--accent);">Next &rarr;</button>
+            </div>
+            <div class="calendar-grid">
+                <div class="calendar-day-header">Su</div>
+                <div class="calendar-day-header">Mo</div>
+                <div class="calendar-day-header">Tu</div>
+                <div class="calendar-day-header">We</div>
+                <div class="calendar-day-header">Th</div>
+                <div class="calendar-day-header">Fr</div>
+                <div class="calendar-day-header">Sa</div>
+            </div>
+            <div id="calendar-days-grid" class="calendar-grid"></div>
+            <div id="calendar-day-details" style="margin-top: 16px;"></div>
+        </div>
+
         <button onclick="attemptNav(1)" style="margin-top: 16px;">Back to Brew</button>
     </div>
 
@@ -552,6 +636,10 @@
     let timerInterval = null;
     let isTimerRunning = false;
     let currentStep = 1;
+    
+    // Calendar navigation state
+    let calendarCurrentDate = new Date();
+    let isCalendarMode = false;
 
     window.addEventListener('beforeunload', (e) => {
         if (isTimerRunning || currentStep === 2) {
@@ -582,7 +670,7 @@
 
         if (stepNum === 1) updateBeanSelectDropdown();
         if (stepNum === 2) initPresetTimerSession();
-        if (stepNum === 4) renderHistoryContent();
+        if (stepNum === 4) { isCalendarMode = false; updateHistoryViewMode(); renderHistoryContent(); }
         if (stepNum === 5) renderBeanManager();
         if (stepNum === 6) renderPreferredProfile();
     }
@@ -864,6 +952,108 @@
         db.beans = db.beans.filter(x => x.id !== id);
         persistData();
         renderBeanManager();
+    }
+
+    function toggleCalendarView() {
+        isCalendarMode = !isCalendarMode;
+        updateHistoryViewMode();
+        if (isCalendarMode) renderCalendar();
+    }
+
+    function updateHistoryViewMode() {
+        document.getElementById('history-view-container').style.display = isCalendarMode ? 'none' : 'block';
+        document.getElementById('calendar-view-container').style.display = isCalendarMode ? 'block' : 'none';
+        document.getElementById('calendar-toggle-btn').textContent = isCalendarMode ? '📜 View List' : '📅 View Calendar';
+    }
+
+    function changeMonth(dir) {
+        calendarCurrentDate.setMonth(calendarCurrentDate.getMonth() + dir);
+        renderCalendar();
+    }
+
+    function renderCalendar() {
+        const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+        const year = calendarCurrentDate.getFullYear();
+        const month = calendarCurrentDate.getMonth();
+
+        document.getElementById('calendar-month-year').textContent = `${monthNames[month]} ${year}`;
+        document.getElementById('calendar-day-details').innerHTML = '';
+
+        const firstDayIndex = new Date(year, month, 1).getDay();
+        const totalDays = new Date(year, month + 1, 0).getDate();
+        const prevTotalDays = new Date(year, month, 0).getDate();
+
+        const grid = document.getElementById('calendar-days-grid');
+        grid.innerHTML = '';
+
+        // Map sessions by date string for quick lookup
+        const sessionsByDate = {};
+        db.sessions.forEach(s => {
+            if (!sessionsByDate[s.date]) sessionsByDate[s.date] = [];
+            sessionsByDate[s.date].push(s);
+        });
+
+        // Previous month trailing days
+        for (let i = firstDayIndex - 1; i >= 0; i--) {
+            const dayNum = prevTotalDays - i;
+            grid.innerHTML += `<div class="calendar-cell other-month"><span class="day-num">${dayNum}</span></div>`;
+        }
+
+        // Current month days
+        for (let day = 1; day <= totalDays; day++) {
+            const dateObj = new Date(year, month, day);
+            const dateStr = dateObj.toLocaleDateString();
+            const daySessions = sessionsByDate[dateStr] || [];
+            const hasCoffee = daySessions.length > 0;
+
+            let dotsHtml = '';
+            if (hasCoffee) {
+                dotsHtml = '<div class="coffee-dot-container">';
+                daySessions.forEach(() => {
+                    dotsHtml += '<div class="coffee-dot"></div>';
+                });
+                dotsHtml += '</div>';
+            }
+
+            const cellClass = `calendar-cell ${hasCoffee ? 'has-coffee' : ''}`;
+            const clickAttr = hasCoffee ? `onclick="showCalendarDaySessions('${dateStr}')"` : '';
+
+            grid.innerHTML += `
+                <div class="${cellClass}" ${clickAttr}>
+                    <span class="day-num">${day}</span>
+                    ${dotsHtml}
+                </div>
+            `;
+        }
+
+        // Next month leading days to complete grid rows
+        const totalCellsRendered = firstDayIndex + totalDays;
+        const remainingCells = (totalCellsRendered % 7 === 0) ? 0 : 7 - (totalCellsRendered % 7);
+        for (let day = 1; day <= remainingCells; day++) {
+            grid.innerHTML += `<div class="calendar-cell other-month"><span class="day-num">${day}</span></div>`;
+        }
+    }
+
+    function showCalendarDaySessions(dateStr) {
+        const daySessions = db.sessions.filter(s => s.date === dateStr);
+        const detailsContainer = document.getElementById('calendar-day-details');
+        
+        let html = `<h3 style="font-size: 0.9rem; color: var(--accent); margin-bottom: 8px;">Brews on ${dateStr} (${daySessions.length}):</h3>`;
+        daySessions.forEach((s, idx) => {
+            html += `
+                <div class="item-card" style="background: #faf8f5; margin-bottom: 8px;">
+                    <div class="item-card-header">
+                        <strong>Cup #${idx + 1}: ${s.beanName}</strong>
+                        <span class="badge">Score: ${s.score} / 10</span>
+                    </div>
+                    <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 4px;">
+                        Grind: ${s.grind}c | Temp: ${s.temp}°C | Dose/Water: ${s.coffee}g / ${s.water}g
+                    </div>
+                    <div style="font-size: 0.8rem; color: var(--accent);">Comment: "${s.notes || 'None'}"</div>
+                </div>
+            `;
+        });
+        detailsContainer.innerHTML = html;
     }
 
     function renderHistoryContent() {
