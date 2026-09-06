@@ -1,1 +1,1 @@
-https://github.com/soobshua/theperfectbrew.git
+https://soobshua.github.io/theperfectbrew/
